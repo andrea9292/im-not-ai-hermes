@@ -377,20 +377,37 @@ Before finalizing, verify:
 
 ## Installation Notes
 
-This standalone repository is laid out as one Hermes skill package. Install or copy the whole repository directory, not only `SKILL.md`, because the skill depends on sibling `references/` and `scripts/` files.
+This repository is tap-friendly: the skill package lives at `skills/humanize-korean/`. Prefer Hermes hub/tap installation over raw `SKILL.md` URL installation, because this skill depends on sibling `references/` and `scripts/` files.
 
-Manual copy example after cloning:
+Recommended install:
+
+```bash
+hermes skills tap add andrea9292/im-not-ai-hermes
+hermes skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+```
+
+Inspect before installing:
+
+```bash
+hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
+```
+
+Direct install without adding a tap also works:
+
+```bash
+hermes skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+```
+
+Manual copy fallback after cloning:
 
 ```bash
 # Default Hermes home
 mkdir -p "$HOME/.hermes/skills/writing"
-cp -R im-not-ai-hermes "$HOME/.hermes/skills/writing/humanize-korean"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/skills/writing/humanize-korean"
 
 # Named profile
 mkdir -p "$HOME/.hermes/profiles/writer/skills/writing"
-cp -R im-not-ai-hermes "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
 ```
 
-Alternatively, install directly from the raw `SKILL.md` only when your Hermes version can also preserve linked files from repository-based skill sources. If references are missing after install, use the manual copy method above.
-
-Start a new Hermes session or reset the current session after installation so the skill registry can refresh.
+Start a new Hermes session or reset/reload skills after installation so the skill registry can refresh.

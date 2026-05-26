@@ -18,42 +18,71 @@ The Korean AI-tell taxonomy, quick rules, rewriting playbook, scholarship refere
 
 ## Repository layout
 
+This repository is laid out as a Hermes tap-friendly skill source. The skill package lives under `skills/humanize-korean/` so Hermes can discover it through `hermes skills tap add`.
+
 ```text
-SKILL.md                         # Hermes skill entry point
-references/quick-rules.md        # Fast-path rules
-references/ai-tell-taxonomy.md   # Full taxonomy
-references/rewriting-playbook.md # Detailed rewriting recipes
-references/scholarship.md        # Scholarship notes
-references/metrics.py            # Optional v1 metrics helper
-references/metrics_v2.py         # Optional v2 post-editese metrics helper
-scripts/prepare_monolith_input.py# Optional file-workflow helper
-tests/                           # Metrics/helper tests
+skills/humanize-korean/SKILL.md                         # Hermes skill entry point
+skills/humanize-korean/references/quick-rules.md        # Fast-path rules
+skills/humanize-korean/references/ai-tell-taxonomy.md   # Full taxonomy
+skills/humanize-korean/references/rewriting-playbook.md # Detailed rewriting recipes
+skills/humanize-korean/references/scholarship.md        # Scholarship notes
+skills/humanize-korean/references/metrics.py            # Optional v1 metrics helper
+skills/humanize-korean/references/metrics_v2.py         # Optional v2 post-editese metrics helper
+skills/humanize-korean/scripts/prepare_monolith_input.py# Optional file-workflow helper
+skills/humanize-korean/tests/                           # Metrics/helper tests
 ```
 
 ## Install for Hermes
 
-Clone the repository and copy the whole directory into your Hermes skills folder. Do not copy only `SKILL.md`; the reference files are part of the skill package.
+Recommended tap-based install:
+
+```bash
+hermes skills tap add andrea9292/im-not-ai-hermes
+hermes skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+```
+
+You can inspect the skill before installing:
+
+```bash
+hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
+```
+
+After installing, start a new Hermes session or reload skills, then load `humanize-korean`.
+
+```text
+/reload-skills
+/skill humanize-korean
+```
+
+Direct install without a tap also works:
+
+```bash
+hermes skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+```
+
+Manual copy fallback, if hub installation is unavailable:
 
 ```bash
 git clone https://github.com/andrea9292/im-not-ai-hermes.git
 mkdir -p "$HOME/.hermes/skills/writing"
-cp -R im-not-ai-hermes "$HOME/.hermes/skills/writing/humanize-korean"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/skills/writing/humanize-korean"
 ```
 
 For a named Hermes profile, for example `writer`:
 
 ```bash
 mkdir -p "$HOME/.hermes/profiles/writer/skills/writing"
-cp -R im-not-ai-hermes "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
 ```
 
-Start a new Hermes session or reload skills, then load `humanize-korean`.
+Avoid raw `SKILL.md` URL installation for this skill. URL installs are single-file oriented and may not preserve the required `references/` and `scripts/` files.
 
 ## Optional metrics
 
-The metrics helpers use the Python standard library only. From the repository root:
+The metrics helpers use the Python standard library only. From the skill package directory:
 
 ```bash
+cd skills/humanize-korean
 python scripts/prepare_monolith_input.py --text "분석할 한국어 원문" --genre essay
 python references/metrics_v2.py --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
 ```
