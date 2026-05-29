@@ -1,6 +1,6 @@
 # 출처 동기화 기록
 
-이 문서는 `im-not-ai-hermes`가 어떤 원본을 기준으로 만들어졌고, Hermes 포트에서 무엇을 바꾸었는지 기록한다.
+이 문서는 `im-not-ai-hermes`를 만들 때 기준으로 삼은 원본과 Hermes 포트에서 바꾼 점을 기록한다.
 
 ## 원본 기준
 
@@ -32,15 +32,15 @@
 
 ## Hermes 포트에서 바꾼 점
 
-이 포트는 원본의 글쓰기 규칙과 참고 자료를 보존하되, 실행 모델을 Hermes Agent에 맞게 바꾼다.
+이 포트는 원본의 글쓰기 규칙과 참고 자료를 보존하되, 운영 방식을 Hermes Agent에 맞게 조정한다.
 
 - Claude Code의 `.claude/agents/*.md`를 Hermes runtime agent로 등록하지 않는다.
 - Claude Code의 `Agent`, `TeamCreate`, `TeamDelete`, `model: opus` 라우팅을 사용하지 않는다.
 - Claude Code slash command인 `/humanize`, `/humanize-redo`를 제공하지 않는다.
-- Hermes에서는 `humanize-korean` skill instruction, reference files, file tools, terminal tools, 선택적 `delegate_task`로 workflow를 수행한다.
+- Hermes에서는 `humanize-korean` skill instruction, reference files, file tools, terminal tools, 선택적 `delegate_task`로 workflow를 진행한다.
 - repository 구조는 Hermes tap discovery를 위해 `skills/humanize-korean/`를 사용한다.
 - raw `SKILL.md` URL 설치보다 `hermes skills tap add`와 `hermes skills install`을 우선한다.
-- personal voice matching, 기관별 house style, 비공개 프로젝트 어휘는 public skill에서 제외한다.
+- personal voice matching, 기관별 house style, 비공개 프로젝트 어휘는 public skill에 넣지 않는다.
 
 ## 포함한 v2.0 계열 내용
 
@@ -58,12 +58,12 @@
 
 - marketplace용 이미지 asset은 포함하지 않는다.
 - Codex plugin manifest나 Claude Code command 파일은 포함하지 않는다.
-- 원본 role agent prompt를 별도 `references/agents/`로 복제하지 않는다. Hermes에서는 strict review를 고정된 5-agent runtime이 아니라 optional multi-pass workflow로 설명한다.
+- 원본 role agent prompt를 별도 `references/agents/`로 복제하지 않는다. Hermes에서는 strict review를 고정된 5-agent runtime 대신 optional multi-pass workflow로 설명한다.
 - web service 구현은 포함하지 않는다. `web-service-spec.md`는 참고 문서로만 유지한다.
 
 ## 동기화 시 점검 항목
 
-원본이 업데이트되면 다음을 확인한다.
+원본이 업데이트되면 다음 항목을 확인한다.
 
 1. upstream release tag와 commit을 기록한다.
 2. taxonomy, quick rules, playbook, scholarship, metrics, baseline 변경 여부를 확인한다.

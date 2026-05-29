@@ -2,7 +2,7 @@
 
 ## 2.0.0-hermes.1 (2026-05-29)
 
-첫 공개 Hermes Agent 포트다. 원본 `epoko77-ai/im-not-ai` v2.0.0 계열의 한국어 AI 문체·번역투·후편집투 완화 workflow를 Hermes skill package로 옮겼다.
+첫 공개 Hermes Agent 포트다. 원본 `epoko77-ai/im-not-ai` v2.0.0 계열의 한국어 글쓰기 품질 개선과 번역투·후편집투 완화 workflow를 Hermes skill package로 옮겼다.
 
 ### 핵심 내용
 
@@ -13,10 +13,10 @@
   - `skills/humanize-korean/tests/`
 - `hermes skills tap add`와 `hermes skills install`로 설치할 수 있도록 README를 정리했다.
 - 원본 MIT attribution을 `NOTICE.md`와 문서에 보존했다.
-- public skill boundary를 명시했다.
+- public skill boundary를 문서에 명시했다.
   - 개인 문체, 기관 house style, 비공개 프로젝트 어휘를 포함하지 않는다.
-  - authorship deception이나 AI 사용 공개 회피를 목적으로 사용하지 않는다.
-- writer profile에서 hub/tap 설치본으로 검증했다.
+  - 작성 과정을 숨기거나 AI 사용 공개 의무를 피하는 목적으로 사용하지 않는다.
+- writer profile에서 hub/tap 설치본을 검증했다.
 
 ### 반영한 원본 v2.0-era 요소
 
@@ -30,8 +30,8 @@
 
 ### Hermes 포트 변경
 
-- Claude Code 전용 `Agent`, `TeamCreate`, `TeamDelete`, slash command, model routing을 제거했다.
-- Hermes Agent가 직접 fast path를 수행하도록 `SKILL.md`를 재작성했다.
+- Claude Code 전용 `Agent`, `TeamCreate`, `TeamDelete`, slash command, model routing을 실행 전제로 삼지 않도록 정리했다.
+- Hermes Agent가 fast path를 직접 수행하도록 `SKILL.md`를 재작성했다.
 - strict path는 고정된 5-agent runtime이 아니라 Hermes multi-pass workflow와 선택적 `delegate_task`로 설명했다.
 - raw `SKILL.md` URL 설치 대신 tap/hub 설치를 권장한다.
 
@@ -51,7 +51,7 @@ hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
 hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
-설치 결과는 `skills.sh` source, community trust, safe scan verdict로 기록됐다.
+설치 결과에는 `skills.sh` source, community trust, safe scan verdict가 기록됐다.
 
 ### 알려진 제한
 

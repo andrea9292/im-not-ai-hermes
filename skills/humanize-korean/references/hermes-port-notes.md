@@ -7,7 +7,7 @@
 - 원본 Claude Code 스킬: `.claude/skills/humanize-korean/`
 - 포팅 기준: `upstream/main`의 v2.0.0 계열 commit, `8071726`까지 반영 (2026-05-07)
 
-이 Hermes 포트는 원저자와 기여자의 attribution을 보존한다. taxonomy, quick rules, rewriting playbook, scholarship reference, metrics utility는 원본 프로젝트에서 가져와 Hermes Agent에서 사용할 수 있도록 운영 모델을 바꾼 것이다.
+이 Hermes 포트는 원저자와 기여자의 attribution을 보존한다. taxonomy, quick rules, rewriting playbook, scholarship reference, metrics utility는 원본 프로젝트에서 가져와 Hermes Agent에서 사용할 수 있도록 운영 방식을 조정한 것이다.
 
 ## Hermes 포트에서 바꾼 점
 
@@ -20,14 +20,14 @@
 - `model: opus` 같은 Claude model routing
 - repository root 기준 helper script와 test
 
-Hermes는 이 파일과 개념을 실행 가능한 skill machinery로 그대로 취급하지 않는다. 그래서 Hermes 포트는 다음처럼 운영 모델을 바꾼다.
+Hermes는 이 파일과 개념을 그대로 실행 가능한 skill machinery로 취급하지 않는다. 그래서 Hermes 포트는 다음처럼 운영 방식을 조정한다.
 
-- 빠른 경로는 main Hermes agent가 직접 수행한다.
+- 빠른 경로는 main Hermes agent가 직접 진행한다.
 - 기본 규칙 출처는 `references/quick-rules.md`다.
-- `references/metrics.py`와 `references/metrics_v2.py`는 선택적 local preprocessor다.
+- `references/metrics.py`와 `references/metrics_v2.py`는 선택적 local preprocessor로 둔다.
 - `scripts/prepare_monolith_input.py`는 이 skill directory를 기준으로 references를 찾고, 호출자의 현재 작업 디렉터리 아래 `_workspace/`를 만든다.
 - 정밀한 탐지, 윤문, 의미 보존 감사, 자연스러움 검토는 Claude Code agent 호출이 아니라 Hermes workflow로 설명한다.
-- 개인 문체 matching은 public skill에서 제외한다.
+- 개인 문체 matching은 public skill에 넣지 않는다.
 
 ## v2.0 포트 구성
 
@@ -43,7 +43,7 @@ Hermes는 이 파일과 개념을 실행 가능한 skill machinery로 그대로 
 
 ## 공개 배포 경계
 
-이 skill은 범용으로 유지한다. 다음을 추가하지 않는다.
+이 skill은 범용 한국어 글쓰기 품질 개선 도구로 유지한다. 다음 항목은 추가하지 않는다.
 
 - 특정 개인의 voice profile
 - private style-guide rule
@@ -51,7 +51,7 @@ Hermes는 이 파일과 개념을 실행 가능한 skill machinery로 그대로 
 - 공개되지 않은 프로젝트 용어
 - 한 사용자에게만 의미 있는 writing preference
 
-사용자가 개인 문체 보존을 원하면, 이 skill 위에 별도 local skill, style guide, voice sample을 조합한다.
+사용자가 개인 문체 반영을 원하면, 이 skill 위에 별도 local skill, style guide, voice sample을 조합한다.
 
 ## 향후 작업
 

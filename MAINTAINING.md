@@ -1,13 +1,13 @@
 # im-not-ai-hermes 유지보수 체크리스트
 
-이 문서는 `im-not-ai-hermes`를 공개 Hermes skill source로 유지보수할 때 사용하는 체크리스트다.
+이 문서는 `im-not-ai-hermes`를 공개 Hermes skill source로 유지보수할 때 참고하는 체크리스트다.
 
 ## 1. 일반 원칙
 
 - 원본 `epoko77-ai/im-not-ai`의 MIT attribution을 보존한다.
 - public skill에는 개인 문체, 기관별 house style, 비공개 프로젝트 어휘를 넣지 않는다.
-- “AI 사용 사실을 숨기는 도구”가 아니라 “한국어 글쓰기 품질 개선 도구”로 설명한다.
-- 원본 Claude Code 구조를 Hermes runtime처럼 오해하게 만들지 않는다.
+- “공개 의무를 피하는 도구”가 아니라 “한국어 글쓰기 품질 개선 도구”로 설명한다.
+- 원본 Claude Code 구조를 Hermes runtime으로 오해하게 만들지 않는다.
 - 변경 후에는 README, SOURCE, RELEASE_NOTES, NOTICE의 정합성을 확인한다.
 
 ## 2. 새 원본 버전 반영 절차
@@ -22,7 +22,7 @@
    - scripts/tests
    - README 또는 운영 정책
 3. Hermes 포트에 필요한 파일만 반영한다.
-4. Claude Code 전용 요소는 Hermes workflow로 바꾸거나 제외한다.
+4. Claude Code 전용 요소는 Hermes workflow에 맞게 조정하거나 제외한다.
 5. `SOURCE.md`에 upstream commit, sync date, file mapping 변경을 기록한다.
 6. `RELEASE_NOTES.md`에 새 Hermes port version을 기록한다.
 
@@ -91,16 +91,16 @@ rg 'TODO|TBD|PLACEHOLDER' .
 rg '/Users/|/private/|/tmp/' .
 ```
 
-두 번째 검색은 예시 코드나 유지보수 문서에서 의도적으로 언급한 경로까지 잡을 수 있으므로, 실제 비공개 경로·개인정보·기관 공식성 오해를 만드는 표현인지 문맥을 확인한다.
+두 번째 검색은 예시 코드나 유지보수 문서에서 의도적으로 언급한 경로까지 잡을 수 있으므로, 실제 비공개 경로, 개인정보, 공식 배포물처럼 보이게 하는 표현인지 문맥을 확인한다.
 
 허용되는 표현과 금지되는 표현을 구분한다.
 
 | 구분 | 권장 | 피함 |
 |---|---|---|
-| 목적 | 한국어 글쓰기 품질 개선 | AI 사용 은폐 |
-| 작업 | 번역투·후편집투 완화 | 탐지 우회 보장 |
-| 범위 | 의미 보존 윤문 | 저자성 위장 |
-| 소유 | personal downstream port | 기관 공식 스킬 |
+| 목적 | 한국어 글쓰기 품질 개선 | 공개 의무 회피 |
+| 작업 | 번역투·후편집투 완화 | 판정 결과 보장 |
+| 범위 | 의미 보존 윤문 | 작성 과정 은폐 |
+| 소유 | personal downstream port | 공식 배포물처럼 보이는 표현 |
 
 ## 5. 커밋과 push
 
