@@ -1,60 +1,61 @@
-# Hermes port notes
+# Hermes 포트 노트
 
-## Source
+## 출처
 
-- Original repository: `epoko77-ai/im-not-ai`
-- Original license: MIT
-- Original Claude Code skill: `.claude/skills/humanize-korean/`
-- Ported upstream baseline: `upstream/main` at v2.0.0-era commits through `8071726` (2026-05-07)
+- 원본 저장소: `epoko77-ai/im-not-ai`
+- 원본 라이선스: MIT
+- 원본 Claude Code 스킬: `.claude/skills/humanize-korean/`
+- 포팅 기준: `upstream/main`의 v2.0.0 계열 commit, `8071726`까지 반영 (2026-05-07)
 
-This Hermes port preserves attribution to the original author and contributors. The taxonomy, quick rules, rewriting playbook, scholarship reference, and metrics utilities are adapted from the original project; this directory changes the operating model so the workflow can be used as a Hermes Agent skill.
+이 Hermes 포트는 원저자와 기여자의 attribution을 보존한다. taxonomy, quick rules, rewriting playbook, scholarship reference, metrics utility는 원본 프로젝트에서 가져와 Hermes Agent에서 사용할 수 있도록 운영 모델을 바꾼 것이다.
 
-## What changed in the Hermes port
+## Hermes 포트에서 바꾼 점
 
-The original project assumes Claude Code features:
+원본 프로젝트는 Claude Code의 다음 기능을 전제로 한다.
 
 - `.claude/agents/*.md`
 - `.claude/commands/*.md`
-- `Agent` calls
+- `Agent` 호출
 - `TeamCreate` / `TeamDelete`
-- Claude model routing such as `model: opus`
-- root-level helper scripts and tests
+- `model: opus` 같은 Claude model routing
+- repository root 기준 helper script와 test
 
-Hermes does not treat those files or concepts as executable skill machinery. The Hermes port therefore changes the operation model:
+Hermes는 이 파일과 개념을 실행 가능한 skill machinery로 그대로 취급하지 않는다. 그래서 Hermes 포트는 다음처럼 운영 모델을 바꾼다.
 
-- The main Hermes agent performs the fast path directly.
-- `references/quick-rules.md` is the default rule source.
-- `references/metrics.py` and `references/metrics_v2.py` are optional local preprocessors.
-- `scripts/prepare_monolith_input.py` resolves references from this skill directory and creates `_workspace/` under the caller's cwd.
-- Strict multi-pass detection, rewriting, fidelity audit, and naturalness review are described as a Hermes workflow rather than Claude Code agent calls.
-- Personal voice matching is intentionally excluded from the public skill.
+- 빠른 경로는 main Hermes agent가 직접 수행한다.
+- 기본 규칙 출처는 `references/quick-rules.md`다.
+- `references/metrics.py`와 `references/metrics_v2.py`는 선택적 local preprocessor다.
+- `scripts/prepare_monolith_input.py`는 이 skill directory를 기준으로 references를 찾고, 호출자의 현재 작업 디렉터리 아래 `_workspace/`를 만든다.
+- 정밀한 탐지, 윤문, 의미 보존 감사, 자연스러움 검토는 Claude Code agent 호출이 아니라 Hermes workflow로 설명한다.
+- 개인 문체 matching은 public skill에서 제외한다.
 
-## v2.0 port contents
+## v2.0 포트 구성
 
-- `references/ai-tell-taxonomy.md`: full v2.0 taxonomy, including Korean translation-studies additions.
-- `references/quick-rules.md`: fast-path S1/S2 rules updated through v2.0.
-- `references/rewriting-playbook.md`: category-level rewrite recipes.
-- `references/scholarship.md`: external scholarship SSOT.
-- `references/metrics.py`: v1.6 KatFish/LREAD-style quantitative metrics.
-- `references/metrics_v2.py`: v2.0 post-editese and translation-interference metric layer.
-- `references/baseline.json`, `references/baseline_v2.json`: metric baselines/placeholders.
-- `scripts/prepare_monolith_input.py`: optional metrics-prep shim for file workflows.
-- `tests/`: local regression tests for the metrics modules.
+- `references/ai-tell-taxonomy.md`: 한국 번역학계 보강을 포함한 전체 v2.0 taxonomy
+- `references/quick-rules.md`: v2.0 기준 fast-path S1/S2 규칙
+- `references/rewriting-playbook.md`: 카테고리별 윤문 처방
+- `references/scholarship.md`: 외부 학술 근거 메모
+- `references/metrics.py`: v1.6 KatFish/LREAD-style 정량 지표
+- `references/metrics_v2.py`: v2.0 post-editese와 translation-interference 지표
+- `references/baseline.json`, `references/baseline_v2.json`: 지표 baseline과 placeholder cell
+- `scripts/prepare_monolith_input.py`: 파일 workflow용 metrics prep shim
+- `tests/`: metrics module 회귀 테스트
 
-## Public distribution boundary
+## 공개 배포 경계
 
-This skill should stay general-purpose. Do not add:
+이 skill은 범용으로 유지한다. 다음을 추가하지 않는다.
 
-- a specific person's voice profile
-- private style-guide rules
-- organization-specific house style
-- unpublished project vocabulary
-- writing preferences that only make sense for one user
+- 특정 개인의 voice profile
+- private style-guide rule
+- 기관별 house style
+- 공개되지 않은 프로젝트 용어
+- 한 사용자에게만 의미 있는 writing preference
 
-If a user wants their own writing style preserved, combine this skill with a separate local skill, style guide, or voice sample.
+사용자가 개인 문체 보존을 원하면, 이 skill 위에 별도 local skill, style guide, voice sample을 조합한다.
 
-## Suggested future work
+## 향후 작업
 
-- Add sample input/output fixtures for Korean AI-tell patterns.
-- Add repository/tap installation instructions once the preferred public Hermes distribution workflow is settled. Until then, document manual directory-copy installation so `references/`, `scripts/`, and `tests/` are preserved.
-- Consider a strict-mode helper prompt using Hermes `delegate_task`, but keep fast mode as the default.
+- 한국어 AI 문체 패턴별 sample input/output fixture를 추가한다.
+- public `andrea9292/im-not-ai-hermes` tap source에 맞춰 설치 안내를 계속 최신 상태로 유지한다.
+- strict-mode helper prompt를 Hermes `delegate_task` 기반으로 실험할 수 있지만, fast mode를 기본으로 유지한다.
+- upstream sync가 바뀔 때 `README.md`, `SOURCE.md`, `RELEASE_NOTES.md`, `MAINTAINING.md`를 함께 갱신한다.
