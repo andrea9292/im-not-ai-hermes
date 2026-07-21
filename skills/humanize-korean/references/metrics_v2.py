@@ -14,9 +14,11 @@ Versioning:
 - v1.6 8 functions (comma_inclusion_rate ... lexical_diversity) are imported
   *as-is* from references/metrics.py (signature + return preserved). DO NOT
   redefine them here. Regression-safe.
-- v2.0 adds 14 NEW pure functions for post-editese + T1~T8 detection.
+- v2.0 adds 14 NEW pure functions for post-editese + T1~T8 detection,
+  plus `change_rate()` — the SSOT for 철칙 #4 change-rate gating.
 
-This Hermes port ships the file directly under `references/` next to `metrics.py`.
+This file ships next to metrics.py in the Hermes skill package's
+`references/` directory.
 
 CLI:
     python metrics_v2.py --input run/01_input.txt \
@@ -26,6 +28,7 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import os
@@ -40,8 +43,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
-# Hermes port: metrics.py ships next to this file under
-# references/.
+# metrics.py ships in the same references/ directory as this file.
 _V1_METRICS_DIR = _HERE
 if _V1_METRICS_DIR not in sys.path:
     sys.path.insert(0, _V1_METRICS_DIR)
@@ -608,6 +610,59 @@ def interference_index(text: str) -> dict[str, Any]:
         "n_sentences": n_sents,
         "n_chars": chars,
     }
+
+
+# ---------------------------------------------------------------------------
+# === CHANGE RATE (철칙 #4 게이트 SSOT) ===
+# ---------------------------------------------------------------------------
+
+# 철칙 #4 게이트 임계값. change_rate() 반환값과 직접 비교한다.
+CHANGE_RATE_WARN = 0.30   # 30% 이상 — 경고, 과윤문 점검
+CHANGE_RATE_ABORT = 0.50  # 50% 이상 — 강제 중단
+
+# 마크업 전용 줄: 코드 펜스·수평선·표 구분선 등 — ignore_markup 모드에서 제거.
+_MARKUP_ONLY_LINE_RE = re.compile(
+    r"^\s*(?:```.*|~~~.*|-{3,}|\*{3,}|={3,}|\|[\s:\-|]*)\s*$"
+)
+# 줄머리 마크업 장식: 헤딩(#)·불릿(-·*·+)·번호 목록·인용(>) — 장식만 벗기고
+# 텍스트 내용은 보존한다.
+_MARKUP_PREFIX_RE = re.compile(r"^\s*(?:#{1,6}\s+|>\s?|[-*+]\s+|\d{1,3}[.)]\s+)")
+
+
+def _strip_markup(text: str) -> str:
+    """Drop markup-only lines and leading markup decoration, keep content."""
+    kept: list[str] = []
+    for line in text.splitlines():
+        if _MARKUP_ONLY_LINE_RE.match(line):
+            continue
+        kept.append(_MARKUP_PREFIX_RE.sub("", line))
+    return "\n".join(kept)
+
+
+def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
+    """윤문 전후 문자 기반 변경률 — 철칙 #4 게이트의 SSOT.
+
+    이 함수의 반환값이 변경률의 단일 진실 원천(SSOT)이며, 에이전트의
+    재량(눈대중) 자가 산출을 대체한다. 게이트 판정은 반드시 이 값과
+    ``CHANGE_RATE_WARN``(0.30 경고) / ``CHANGE_RATE_ABORT``(0.50 강제 중단)
+    상수를 비교해 내린다.
+
+    계산: ``difflib.SequenceMatcher`` 문자 단위 유사도의 보수
+    (``1 - ratio``). 0.0(동일) ~ 1.0(전면 교체) 범위.
+
+    ``ignore_markup=True``이면 양쪽 텍스트에서 마크업 전용 줄(코드 펜스·
+    수평선·표 구분선)을 제거하고 줄머리 장식(헤딩 #·불릿·번호·인용 >)을
+    벗긴 뒤 비교한다 — 헤딩·마크업 삭제가 본문 변경률을 부풀리는 문제
+    (2026-04-26-001 run에서 44.7% 중 상당분이 마크업 삭제)의 보정용.
+    기본값은 순수 문자 diff.
+    """
+    if ignore_markup:
+        before = _strip_markup(before)
+        after = _strip_markup(after)
+    if not before and not after:
+        return 0.0
+    matcher = difflib.SequenceMatcher(None, before, after, autojunk=False)
+    return 1.0 - matcher.ratio()
 
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,7 @@
 4. Claude Code 전용 요소는 Hermes workflow에 맞게 조정하거나 제외합니다.
 5. `SOURCE.md`에 upstream commit, sync date, file mapping 변경을 기록합니다.
 6. `RELEASE_NOTES.md`에 새 Hermes port version을 기록합니다.
+7. taxonomy를 바꾸면 `build_quick_rules.py`로 생성물을 갱신합니다.
 
 ## 3. 배포 전 검증
 
@@ -60,7 +61,12 @@ PY
 
 ```bash
 python3 -m pytest skills/humanize-korean/tests -q
+python3 skills/humanize-korean/scripts/build_quick_rules.py --check
 ```
+
+### CI 확인
+
+GitHub Actions는 Python 3.11·3.12에서 전체 테스트와 quick-rules 동기화를 검사합니다.
 
 ### Hermes inspect 확인
 
@@ -71,7 +77,7 @@ hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
 ### 임시 HERMES_HOME 설치 테스트
 
 ```bash
-tmp=/Users/Andrea/Documents/hermes/tmp/im-not-ai-hermes-install-test-$$
+tmp="$HOME/.cache/im-not-ai-hermes-install-test-$$"
 rm -rf "$tmp"
 mkdir -p "$tmp"
 HERMES_HOME="$tmp" hermes skills tap add andrea9292/im-not-ai-hermes
@@ -80,7 +86,7 @@ find "$tmp/skills/writing/humanize-korean" -maxdepth 3 -type f | sort
 rm -rf "$tmp"
 ```
 
-macOS의 `/var`와 `/private/var` symlink 정규화 때문에 `mktemp` 아래 임시 홈에서는 Hermes installer의 path 검증이 경고를 낼 수 있습니다. 이 경우 `/Users/Andrea/Documents/hermes/tmp` 아래 임시 디렉터리를 사용합니다.
+macOS의 `/var`와 `/private/var` symlink 정규화 때문에 `mktemp` 아래 임시 홈에서는 Hermes installer의 path 검증이 경고를 낼 수 있습니다. 이 경우 `$HOME/.cache`처럼 사용자 홈 아래의 실제 경로를 사용합니다.
 
 ## 4. 공개 전 문구 점검
 
@@ -100,7 +106,7 @@ rg '/Users/|/private/|/tmp/' .
 | 목적 | 한국어 글쓰기 품질 개선 | 공개 의무 회피 |
 | 작업 | 번역투·후편집투 완화 | 판정 결과 보장 |
 | 범위 | 의미 보존 윤문 | 작성 과정 은폐 |
-| 소유 | personal downstream port | 공식 배포물처럼 보이는 표현 |
+| 소유 | community downstream port | 공식 배포물처럼 보이는 표현 |
 
 ## 5. 커밋과 push
 
@@ -112,22 +118,18 @@ git push
 
 ## 6. 설치본 갱신
 
-writer profile 등에 설치된 hub skill을 갱신하려면 다음을 사용합니다.
+별도 프로필에 설치된 hub skill을 갱신하려면 다음을 사용합니다.
 
 ```bash
-hermes --profile writer skills update
+PROFILE=<profile-name>
+hermes --profile "$PROFILE" skills check
 ```
 
 필요하면 명시적으로 다시 설치합니다.
 
 ```bash
-hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
-hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+hermes --profile "$PROFILE" skills tap add andrea9292/im-not-ai-hermes
+hermes --profile "$PROFILE" skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
-기존 로컬 스킬이 있는 profile에 덮어쓸 때는 먼저 백업합니다.
-
-```bash
-tar -czf /Users/Andrea/Documents/hermes/output/$(date +%F)_writer-humanize-korean-backup.tar.gz \
-  -C "$HOME/.hermes/profiles/writer/skills/writing" humanize-korean
-```
+기존 설치본을 직접 수정했다면 갱신 전에 별도로 백업합니다. 공개 패키지는 사용자별 수정본이나 추가 파일의 자동 병합을 보장하지 않습니다.

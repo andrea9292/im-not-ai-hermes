@@ -1,7 +1,7 @@
 ---
 name: humanize-korean
 description: Use when polishing Korean text that sounds AI-generated, translated, over-structured, post-edited, or mechanically formal. Detect and reduce Korean-specific AI tells, translationese, metric-backed post-editese signals, and template-like rhythm while preserving meaning, facts, genre, register, citations, numbers, and the author's own voice.
-version: 2.0.0-hermes.1
+version: 2.2.0-hermes.1
 author: epoko77-ai, Hermes port maintained by andrea9292
 license: MIT
 metadata:
@@ -20,19 +20,23 @@ metadata:
 
 The goal is not to erase the author. The goal is to reduce Korean-specific AI tells while preserving meaning, factual claims, genre, register, field vocabulary, citations, numbers, and authorial voice. Formal Korean is not an AI tell by itself. Humanized text should not become casual, literary, opinionated, or generically smooth unless the user explicitly asks for that style.
 
-This Hermes port intentionally avoids Claude Code-only mechanisms from the original repository. Do not assume `.claude/agents`, `Agent`, `TeamCreate`, `TeamDelete`, model routing such as `model: opus`, or slash commands such as `/humanize` and `/humanize-redo` are available. In Hermes, the main agent performs the fast path directly using this skill and its reference files. For strict review, use normal Hermes reasoning, file tools, and optional `delegate_task` subtasks with self-contained prompts.
+This Hermes port intentionally avoids Claude Code-only mechanisms from the original repository. Do not assume `.claude/agents`, `Agent`, `TeamCreate`, `TeamDelete`, model routing such as `model: opus`, or slash commands such as `/humanize` and `/humanize-redo` are available. In Hermes, the main agent performs the route-aware workflow directly using this skill and its reference files. For heavy review, use normal Hermes reasoning, file tools, deterministic gates, and optional `delegate_task` subtasks with self-contained prompts.
 
 ## Upstream and Version Notes
 
-This port incorporates upstream v2.0-era changes:
+This port incorporates upstream changes through v2.2.0 (`3120cb81`):
 
 - v1.6 KatFish/LREAD-inspired quantitative metrics layer (`metrics.py`, `baseline.json`)
 - v1.6.1 single-output summary pattern: prefer `final.md` with a hidden `HUMANIZE-SUMMARY` block for file workflows
 - v2.0 Korean translation-studies additions: A-16, A-18, A-19, E-7 plus A-7, A-15, E-2, F-4 reinforcements
 - v2.0 post-editese metric track (`metrics_v2.py`, `baseline_v2.json`)
 - external scholarship SSOT (`scholarship.md`)
+- v2.0.1 deterministic change-rate gate, register/structure/footnote preservation checks, and fresh-clone path fixes
+- v2.1 taxonomy-to-quick-rules generation, golden regression checks, lossless chunking, and a diagnosis/rewrite/fidelity three-stage strict path
+- v2.2 `route_hint` (`light` / `standard` / `heavy`) so well-written text stays on a minimal path and long text is not chunked merely because it is long
+- v2.2 B-2 technical-term preservation, C-1 severity correction and academic-structure exception, and C-8 negative-positive parallelism expansion
 
-A-17, inanimate/abstract noun `-들`, remains a hold item in the upstream v2.0 taxonomy: it has strong scholarship anchors but no positive cases in the 2026-05-07 external wiki sample pass. Treat it as a metric/scholarship reference, not a default rewrite trigger.
+A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.2. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
 ## Attribution and Public Boundary
 
@@ -94,7 +98,11 @@ Load the smallest useful reference first.
 - `references/metrics.py`: Optional v1.6 quantitative metrics. Standard-library only.
 - `references/metrics_v2.py`: Optional v2.0 post-editese/interference metrics. Standard-library only.
 - `references/baseline.json`, `references/baseline_v2.json`: Baselines and placeholder cells for metrics.
-- `scripts/prepare_monolith_input.py`: Optional file-workflow helper that prepends a metrics block to input.
+- `references/quick-rules.header.md`, `references/quick-rules.footer.md`: Fixed templates used to generate `quick-rules.md`; edit these or the taxonomy, not the generated rule file.
+- `scripts/prepare_monolith_input.py`: File-workflow helper that computes metrics, emits `route_hint`, and optionally creates lossless chunks.
+- `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
+- `scripts/verify_change_rate.py`: Deterministic post-edit gate; below 30% passes, 30–50% warns, and 50% or more aborts adoption.
+- `scripts/reassemble_chunks.py`: Lossless chunk reassembler with source-hash and size-ratio checks.
 - `references/web-service-spec.md`: Optional product/web-service expansion note. Do not load for ordinary text polishing.
 - `references/hermes-port-notes.md`: Porting notes and public-boundary reminders.
 
@@ -106,68 +114,102 @@ Hermes may also provide a broader `humanizer` skill. Treat that skill as the gen
 
 Do not stack both skills mechanically. If both are relevant, let this skill govern Korean-specific edits and use the broader humanizer only for general naturalness checks that do not conflict with the preservation rules here.
 
-## Fast Path Workflow
+## Route-Aware Workflow
 
-Use the fast path for most requests, especially texts under roughly 5,000 Korean characters.
+Use one of three paths. User instructions override metrics: `정밀`, `엄격`, or `strict` forces `heavy`; `가볍게` or `빠르게만` forces `light`. Length does not force `heavy` at or below 15,000 characters; text over 15,000 characters is an upstream-defined `heavy` signal. Even then, chunk only when the shim actually creates two or more body chunks.
 
-1. Identify the task boundary.
-   - Is the input inline text or a file?
-   - Did the user ask to preserve formatting?
-   - Did the user specify genre, strength, or minimum severity?
-   - Is this a direct rewrite, a review report, or both?
+| Route | Default work | Use when |
+|---|---|---|
+| `light` | one direct conservative rewrite | well-written text with few lexical or passive-form tells |
+| `standard` | diagnosis, then one targeted rewrite | ordinary AI draft or mixed signals |
+| `heavy` | diagnosis, rewrite, deterministic gate, and fidelity/final review | dense AI patterns, more than 15,000 characters, explicit strict request, or evidence-sensitive publication work |
 
-2. Load the rules.
-   - Use `quick-rules.md` as the main reference.
-   - Only load the full taxonomy, scholarship, or playbook if the text is difficult, long, publication-sensitive, or the user asks for strict review.
+### 1. Identify the boundary
 
-3. Estimate genre and register.
-   - Possible genre hints: 칼럼, 블로그, 리포트, 공지, 발표문, 학술문, 정책문, 제품 문서.
-   - Preserve the original level of formality unless instructed otherwise.
+- Determine inline text versus file workflow, genre, register, formatting constraints, and requested strength.
+- Preserve headings, lists, tables, footnotes, links, frontmatter, and direct quotations unless the user explicitly asks to restructure them.
+- Do not infer a private house style from unrelated local files. A separate user-provided style guide may be layered on top.
 
-4. Optionally compute metrics for file workflows.
-   - For longer or publication-sensitive file edits, run `scripts/prepare_monolith_input.py` or the metrics modules directly.
-   - Use metrics to identify likely hotspots: comma patterns, conclusion lexicon, safe-balance lexicon, hanja nominalizers, lexical diversity, pronoun density, passive/by patterns, double particles, relative-clause nesting, progressive aspect, and interference index.
-   - Do not let metrics override semantic preservation or genre judgment.
+### 2. Load the smallest rule set
 
-5. Scan for Korean AI tells.
-   Focus first on high-impact categories:
-   - A: translationese such as `~에 대해`, `~를 통해`, `~에 있어서`, `가지고 있다`, `~에 의해`, English pronoun literalism, long left-branching relative clauses, double particles
-   - C: structural AI patterns such as mechanical numbering, colon headings, and connective-ending comma patterns
-   - D: AI signature phrases such as `결론적으로`, `시사하는 바가 크다`, `주목할 만하다`, `본질적으로`
-   - E: uniform rhythm, repeated endings, progressive-aspect overuse, honorific-register inconsistency in dialogue
-   - F: redundant modifiers, abstract noun chains, hanja/English nominalization
-   - G/H/I/J: hedging, repeated connectors, padded formal nouns, and visual decoration
+- Load `references/quick-rules.md` for every normal rewrite.
+- Load `references/ai-tell-taxonomy.md` for `standard`/`heavy`, ambiguous cases, or category-level reporting.
+- Load `references/rewriting-playbook.md` only when the quick prescription is insufficient.
+- Load `references/scholarship.md` only when auditing or citing the taxonomy's translation-studies basis.
 
-6. Rewrite surgically.
-   - Fix the strongest and most repeated patterns first.
-   - Do not change terms that are domain-standard.
-   - Do not flatten a writer's intentional repetition unless it reads mechanical.
-   - Prefer sentence-level edits over full-paragraph replacement unless the paragraph structure itself is the AI tell.
+### 3. Compute route signals when files are available
 
-7. Self-check.
-   - Did any number, date, name, quote, citation, URL, legal term, or technical identifier change?
-   - Did the genre or register drift?
-   - Did the rewrite remove the author's point of view?
-   - Did the rewrite add claims, examples, metaphors, or emotional color?
-   - Did the rewrite become too smooth, generic, or literary?
-   - Are S1 patterns still left in obvious places?
+For a file workflow or repeatable diagnostic, run:
 
-8. Return the result.
-   - For inline text: show the revised text and a compact change summary.
-   - For file edits: show the changed file path and diff summary. Do not silently overwrite important files.
+```bash
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
+  --run-dir <run-dir> --genre <genre>
+```
+
+`SKILL_ROOT` is the absolute installed package path. Run from the user's working
+directory: relative `--run-dir`, `--diagnosis`, and automatic `_workspace/`
+paths resolve against the current working directory, never the installed skill.
+
+Read `route_hint` from `00_metrics.json`. If metrics fail or `route_hint` is absent, use `standard`. Treat the route as an advisory, not a detector verdict.
+
+For inline or very short work where creating files adds no value, choose conservatively from the text itself: use `light` unless clear repeated S1/S2 patterns justify `standard`. Do not claim a computed `route_hint` when the script was not run.
+
+### 4. Execute the chosen route
+
+**Light**
+
+1. Rewrite directly with `quick-rules.md`, using `보수` strength.
+2. Keep changes local. If little needs changing, say so rather than manufacturing edits.
+3. Perform the preservation self-check before returning.
+
+**Standard**
+
+1. Diagnose the 3–6 dominant patterns with taxonomy IDs, genre/register, and preservation constraints.
+2. Rewrite once, targeting only those dominant patterns. Do not enumerate every possible span.
+3. Perform the preservation self-check. Use the deterministic change-rate gate for file output.
+
+**Heavy**
+
+1. Diagnose dominant patterns and explicit preservation constraints.
+2. Rewrite the whole document once unless the shim actually creates two or more body chunks.
+3. If `--chunk` is justified, use manifest `input_file` and `rewritten_file` names exactly, then run `scripts/reassemble_chunks.py`. Never invent chunk filenames.
+4. Run `scripts/verify_change_rate.py` and compare original versus rewrite for facts, names, numbers, dates, quotes, citations, URLs, headings, footnotes, and register.
+5. Correct only the suspicious passages. Do not run an unrestricted whole-document rewrite as the final review.
+
+Optional `delegate_task` review is allowed for heavy work, but the parent Hermes agent owns the final text and must verify any returned file or claim.
+
+### 5. Apply the deterministic gate for file output
+
+```bash
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
+```
+
+- exit `0`, below 30%: proceed
+- exit `1`, 30–50%: warn about possible over-editing and perform fidelity review
+- exit `2`, 50% or more: do not adopt the rewrite; roll back or re-run conservatively once
+- exit `3`: fix the input problem; never report an unverified rate
+
+`--ignore-markup` may be used only as a secondary measurement when heading/list conversion inflates the rate. If it changes the interpretation, report both measurements.
+
+### 6. Return the result
+
+- Inline work: revised text plus a compact change summary.
+- File work: output path, route, deterministic change rate, changed areas, and any unresolved review issue.
+- Do not silently overwrite an important source file.
 
 ## Optional Metrics Workflow
 
 Metrics are optional. Use them when the text is long, when the user asks for a diagnostic report, or when a file workflow benefits from repeatable evidence.
 
-Example commands from the repository root or any working directory:
+Run from the user's working directory with `SKILL_ROOT` set to the absolute
+installed package path:
 
 ```bash
-python scripts/prepare_monolith_input.py \
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
   --text "분석할 한국어 원문" \
   --genre essay
 
-python references/metrics_v2.py \
+python "$SKILL_ROOT/references/metrics_v2.py" \
   --input _workspace/2026-05-25-001/01_input.txt \
   --genre essay \
   --output _workspace/2026-05-25-001/00_metrics_v2.json
@@ -188,40 +230,27 @@ The prep script writes:
 
 For human-facing output, do not dump raw metrics unless requested. Summarize the signals that affected edits.
 
-## Optional Strict Path
+## Deterministic Helper Commands
 
-Use a stricter path when:
+Run these from the user's working directory. Relative input/output paths resolve
+against that directory; `SKILL_ROOT` points to the installed package.
 
-- the text is long, usually over 8,000 Korean characters
-- the user asks for strict, careful, or multi-pass review
-- the text will be published or submitted and meaning preservation is critical
-- the first rewrite still feels AI-like
-- the user asks for a category-level report
+```bash
+# Confirm the generated quick rules match taxonomy metadata.
+python "$SKILL_ROOT/scripts/build_quick_rules.py" --check
 
-Strict path in Hermes:
+# Prepare a normal route-aware input bundle.
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay
 
-1. Detection pass:
-   - Produce findings with category ID, severity, span or excerpt, reason, and suggested fix.
-   - Use `ai-tell-taxonomy.md`, and `scholarship.md` when the category depends on translation-studies claims.
+# Heavy-only: create lossless chunks when the text truly exceeds the threshold.
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay --chunk
+python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict
 
-2. Rewrite pass:
-   - Rewrite only findings that justify intervention.
-   - Track before/after examples.
+# Measure the adopted rewrite rather than trusting an LLM estimate.
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
+```
 
-3. Fidelity audit:
-   - Compare original and rewrite for changed facts, claims, examples, names, numbers, dates, citations, URLs, and quotes.
-   - Roll back or revise suspicious edits.
-
-4. Naturalness review:
-   - Re-scan for remaining high-severity AI tells.
-   - Check for over-polishing, register drift, and loss of field vocabulary.
-
-5. Final response:
-   - Provide final text.
-   - Summarize key categories changed.
-   - Mention any unresolved issue that needs human judgment.
-
-If using `delegate_task`, keep subtask prompts self-contained and require verifiable outputs: text, finding list, or file path. The parent agent must make the final judgment.
+The helper scripts are standard-library only. Metrics and route hints support editorial attention; they do not establish whether a text was written by AI.
 
 ## File Workflow Output
 
@@ -303,7 +332,7 @@ For normal inline work, use this compact format:
 - 고유명사, 수치, 인용은 유지했습니다.
 ```
 
-For strict review, use:
+For `heavy` review, use:
 
 ```text
 윤문본
@@ -406,8 +435,9 @@ mkdir -p "$HOME/.hermes/skills/writing"
 cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/skills/writing/humanize-korean"
 
 # Named profile
-mkdir -p "$HOME/.hermes/profiles/writer/skills/writing"
-cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
+PROFILE=<profile-name>
+mkdir -p "$HOME/.hermes/profiles/$PROFILE/skills/writing"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/$PROFILE/skills/writing/humanize-korean"
 ```
 
 Start a new Hermes session or reset/reload skills after installation so the skill registry can refresh.

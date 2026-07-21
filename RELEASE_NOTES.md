@@ -1,5 +1,40 @@
 # 릴리즈 노트
 
+## 2.2.0-hermes.1 (2026-07-21)
+
+원본 `epoko77-ai/im-not-ai` v2.2.0(`3120cb81`)의 taxonomy·검증·경로 선택 변경을 Hermes-native skill package에 반영했습니다.
+
+### 핵심 변경
+
+- `route_hint` 기반 `light`·`standard`·`heavy` 경로를 도입했습니다.
+- 15,000자 이하에서는 길이만으로 heavy를 강제하지 않으며, 15,000자 초과는 upstream과 같이 heavy 신호로 처리합니다. Heavy여도 실제 body chunk가 2개 이상일 때만 청킹합니다.
+- 30% 경고·50% 중단의 결정적 변경률 게이트를 추가했습니다.
+- taxonomy에서 `quick-rules.md`를 생성하는 빌드 계약을 추가했습니다.
+- 헤딩 승격, 숫자식·Markdown 다중행 각주 passthrough, source hash 검증을 포함한 손실 없는 청킹·재조립 도구를 추가했습니다.
+- register, 구조, 각주, 직접 인용 보존을 점검하는 골든 회귀 테스트를 추가했습니다.
+
+### taxonomy와 근거
+
+- B-2의 전문용어 보존 원칙을 반영했습니다.
+- C-1을 S2로 조정하고 학술·보고서 구조 예외를 보강했습니다.
+- C-8에 `A가 아니라 B`형 부정-긍정 대구 반복을 포함했습니다.
+- scholarship의 이론적 종합과 후속 근거를 반영했습니다.
+- A-17은 upstream과 같이 hold 상태로 유지합니다.
+
+### Hermes 적응
+
+- Claude Code의 agent·command·plugin·model routing은 포함하지 않았습니다.
+- main Hermes agent가 세 경로를 직접 수행하도록 `SKILL.md`를 재작성했습니다.
+- helper script가 설치된 skill package의 `references/`를 찾도록 경로를 조정했습니다.
+- 상대 `--run-dir`·`--diagnosis`·자동 `_workspace/`는 사용자 CWD를 기준으로 처리해 설치된 skill package에 작업 결과를 쓰지 않도록 했습니다.
+- `delegate_task`는 heavy 검토의 선택 사항이며, 부모 agent가 최종 결과를 검증하도록 했습니다.
+
+### 검증
+
+- Python 3.11·3.12 GitHub Actions를 추가했습니다.
+- 개발 환경에서 pytest 133개와 unittest 134개(각 1개 skip), quick-rules 동기화 검사를 통과했습니다.
+- 임시 `HERMES_HOME`에서 패키지 설치와 skill 로딩을 검증했습니다.
+
 ## 2.0.0-hermes.1 (2026-05-29)
 
 첫 공개 Hermes Agent 포트입니다. 원본 `epoko77-ai/im-not-ai` v2.0.0 계열의 한국어 글쓰기 품질 개선과 번역투·후편집투 완화 workflow를 Hermes skill package로 옮겼습니다.
@@ -16,7 +51,7 @@
 - public skill boundary를 문서에 명시했습니다.
   - 개인 문체, 기관 house style, 비공개 프로젝트 어휘를 포함하지 않습니다.
   - 작성 과정을 숨기거나 AI 사용 공개 의무를 피하는 목적으로 사용하지 않습니다.
-- writer profile에서 hub/tap 설치본을 검증했습니다.
+- 별도 Hermes 프로필에서 hub/tap 설치본을 검증했습니다.
 
 ### 반영한 원본 v2.0-era 요소
 
@@ -44,11 +79,12 @@ python3 -m pytest skills/humanize-korean/tests -q
 hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
 ```
 
-writer profile에는 다음 방식으로 설치 검증했습니다.
+별도 프로필에는 다음 방식으로 설치 검증했습니다.
 
 ```bash
-hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
-hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+PROFILE=<profile-name>
+hermes --profile "$PROFILE" skills tap add andrea9292/im-not-ai-hermes
+hermes --profile "$PROFILE" skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
 설치 결과에는 `skills.sh` source, community trust, safe scan verdict가 기록되었습니다.
@@ -58,4 +94,4 @@ hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humani
 - 이 저장소는 Hermes skill package이며 웹 서비스 구현을 포함하지 않습니다.
 - `metrics.py`와 `metrics_v2.py`는 보조 신호 도구입니다. AI 여부를 판정하는 검출기가 아닙니다.
 - raw URL 설치는 reference/script 파일을 누락할 수 있으므로 권장하지 않습니다.
-- 현재는 GitHub Actions CI를 포함하지 않습니다. 릴리즈 전 로컬 smoke test를 수행합니다.
+- 이 버전에는 GitHub Actions CI가 없었으며 릴리즈 전 로컬 smoke test만 수행했습니다.

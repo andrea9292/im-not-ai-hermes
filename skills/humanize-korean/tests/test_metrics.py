@@ -1,7 +1,7 @@
-"""Tests for the Hermes humanize-korean v1.6 metrics module.
+"""Tests for humanize-ko v1.6 metrics module.
 
-Runs under either pytest or unittest. Imports metrics.py from the sibling
-references/ directory in the Hermes skill port.
+Runs under either pytest or unittest. Imports the metrics module from the
+self-contained Hermes skill package's references directory.
 """
 
 from __future__ import annotations
@@ -13,16 +13,31 @@ import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SKILL_DIR = os.path.abspath(os.path.join(HERE, ".."))
-METRICS_DIR = os.path.join(SKILL_DIR, "references")
+PROJECT_ROOT = os.path.abspath(os.path.join(HERE, ".."))
+METRICS_DIR = os.path.join(PROJECT_ROOT, "references")
 sys.path.insert(0, METRICS_DIR)
 
 import metrics  # noqa: E402  (sys.path mutation is intentional)
 
+# Bundled baseline shipped next to metrics.py — works on a fresh clone
+# (_workspace/ is gitignored, so never depend on it in tests).
 BASELINE_PATH = os.path.join(METRICS_DIR, "baseline.json")
 
 
 class MetricsTests(unittest.TestCase):
+    # ------------------------------------------------------------------
+    # Bundled baseline wiring (fresh-clone regression guard)
+    # ------------------------------------------------------------------
+
+    def test_default_baseline_path_exists(self) -> None:
+        path = metrics._default_baseline_path()
+        self.assertTrue(os.path.exists(path), f"bundled baseline missing: {path}")
+        self.assertEqual(os.path.abspath(path), os.path.abspath(BASELINE_PATH))
+
+    def test_compute_all_works_without_explicit_baseline(self) -> None:
+        result = metrics.compute_all("오늘은 좋은 날이다.", genre="essay")
+        self.assertIn(result["risk_band"], ("low", "medium", "high"))
+
     # ------------------------------------------------------------------
     # Robustness
     # ------------------------------------------------------------------
