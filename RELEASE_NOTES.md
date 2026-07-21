@@ -33,7 +33,7 @@
 
 - Python 3.11·3.12 GitHub Actions를 추가했습니다.
 - 로컬 pytest 133개와 unittest 134개(각 1개 skip), quick-rules 동기화 검사를 통과했습니다.
-- 임시 `HERMES_HOME` 설치 검증과 writer profile 로컬 확장 보존 설치를 수행했습니다.
+- 임시 `HERMES_HOME`에서 패키지 설치와 skill 로딩을 검증했습니다.
 
 ## 2.0.0-hermes.1 (2026-05-29)
 
@@ -51,7 +51,7 @@
 - public skill boundary를 문서에 명시했습니다.
   - 개인 문체, 기관 house style, 비공개 프로젝트 어휘를 포함하지 않습니다.
   - 작성 과정을 숨기거나 AI 사용 공개 의무를 피하는 목적으로 사용하지 않습니다.
-- writer profile에서 hub/tap 설치본을 검증했습니다.
+- 별도 Hermes 프로필에서 hub/tap 설치본을 검증했습니다.
 
 ### 반영한 원본 v2.0-era 요소
 
@@ -79,11 +79,12 @@ python3 -m pytest skills/humanize-korean/tests -q
 hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
 ```
 
-writer profile에는 다음 방식으로 설치 검증했습니다.
+별도 프로필에는 다음 방식으로 설치 검증했습니다.
 
 ```bash
-hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
-hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+PROFILE=<profile-name>
+hermes --profile "$PROFILE" skills tap add andrea9292/im-not-ai-hermes
+hermes --profile "$PROFILE" skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
 설치 결과에는 `skills.sh` source, community trust, safe scan verdict가 기록되었습니다.

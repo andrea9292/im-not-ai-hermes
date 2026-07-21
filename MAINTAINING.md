@@ -77,7 +77,7 @@ hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
 ### 임시 HERMES_HOME 설치 테스트
 
 ```bash
-tmp=/Users/Andrea/Documents/hermes/tmp/im-not-ai-hermes-install-test-$$
+tmp="$HOME/.cache/im-not-ai-hermes-install-test-$$"
 rm -rf "$tmp"
 mkdir -p "$tmp"
 HERMES_HOME="$tmp" hermes skills tap add andrea9292/im-not-ai-hermes
@@ -86,7 +86,7 @@ find "$tmp/skills/writing/humanize-korean" -maxdepth 3 -type f | sort
 rm -rf "$tmp"
 ```
 
-macOS의 `/var`와 `/private/var` symlink 정규화 때문에 `mktemp` 아래 임시 홈에서는 Hermes installer의 path 검증이 경고를 낼 수 있습니다. 이 경우 `/Users/Andrea/Documents/hermes/tmp` 아래 임시 디렉터리를 사용합니다.
+macOS의 `/var`와 `/private/var` symlink 정규화 때문에 `mktemp` 아래 임시 홈에서는 Hermes installer의 path 검증이 경고를 낼 수 있습니다. 이 경우 `$HOME/.cache`처럼 사용자 홈 아래의 실제 경로를 사용합니다.
 
 ## 4. 공개 전 문구 점검
 
@@ -118,22 +118,24 @@ git push
 
 ## 6. 설치본 갱신
 
-writer profile 등에 설치된 hub skill을 갱신하려면 다음을 사용합니다.
+별도 프로필에 설치된 hub skill을 갱신하려면 다음을 사용합니다.
 
 ```bash
-hermes --profile writer skills check
+PROFILE=<profile-name>
+hermes --profile "$PROFILE" skills check
 ```
 
 필요하면 명시적으로 다시 설치합니다.
 
 ```bash
-hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
-hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
+hermes --profile "$PROFILE" skills tap add andrea9292/im-not-ai-hermes
+hermes --profile "$PROFILE" skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
-`skills update`는 로컬 확장 파일을 보존하지 못할 수 있으므로 바로 실행하지 않습니다. 기존 로컬 스킬이 있는 profile에 덮어쓸 때는 먼저 백업하고, 공개 포트 파일을 반영한 뒤 profile-local 파일을 다시 합칩니다.
+`skills update`는 profile-local 확장 파일을 보존하지 못할 수 있으므로 바로 실행하지 않습니다. 기존 로컬 스킬에 덮어쓸 때는 먼저 백업하고, 공개 포트 파일을 반영한 뒤 profile-local 파일을 다시 합칩니다.
 
 ```bash
-tar -czf /Users/Andrea/Documents/hermes/output/$(date +%F)_writer-humanize-korean-backup.tar.gz \
-  -C "$HOME/.hermes/profiles/writer/skills/writing" humanize-korean
+BACKUP_DIR=<backup-directory>
+tar -czf "$BACKUP_DIR/$(date +%F)_humanize-korean-backup.tar.gz" \
+  -C "$HOME/.hermes/profiles/$PROFILE/skills/writing" humanize-korean
 ```
