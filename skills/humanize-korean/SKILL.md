@@ -211,7 +211,7 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 2. Read back and validate the diagnosis, then rerun the shim with `--diagnosis`.
 3. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, targeting the diagnosed 3–6 patterns.
 4. Read back and validate `final.md`, then apply the deterministic change-rate gate.
-5. Run a finalizer only under the upstream escalation table: gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls.
+5. Run a finalizer only under the upstream escalation table: gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls. When escalation applies, copy the current `final.md` to `final_pre_finalize.md` before dispatch, then call `references/runtime-agents/finalizer.md` with the original, diagnosis, rewritten, backup, and `09_finalize.json` report paths. After completion, read back and validate both `final.md` and `09_finalize.json`, rerun the deterministic change-rate gate with `--stamp-summary`, and apply the resulting gate and finalizer verdict. `hold_and_report` is a human-review stop and must not be reported as an adopted final result.
 
 **Heavy / strict**
 
