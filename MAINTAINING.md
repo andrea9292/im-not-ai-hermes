@@ -106,7 +106,7 @@ rg '/Users/|/private/|/tmp/' .
 | 목적 | 한국어 글쓰기 품질 개선 | 공개 의무 회피 |
 | 작업 | 번역투·후편집투 완화 | 판정 결과 보장 |
 | 범위 | 의미 보존 윤문 | 작성 과정 은폐 |
-| 소유 | personal downstream port | 공식 배포물처럼 보이는 표현 |
+| 소유 | community downstream port | 공식 배포물처럼 보이는 표현 |
 
 ## 5. 커밋과 push
 
@@ -132,10 +132,4 @@ hermes --profile "$PROFILE" skills tap add andrea9292/im-not-ai-hermes
 hermes --profile "$PROFILE" skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
-`skills update`는 profile-local 확장 파일을 보존하지 못할 수 있으므로 바로 실행하지 않습니다. 기존 로컬 스킬에 덮어쓸 때는 먼저 백업하고, 공개 포트 파일을 반영한 뒤 profile-local 파일을 다시 합칩니다.
-
-```bash
-BACKUP_DIR=<backup-directory>
-tar -czf "$BACKUP_DIR/$(date +%F)_humanize-korean-backup.tar.gz" \
-  -C "$HOME/.hermes/profiles/$PROFILE/skills/writing" humanize-korean
-```
+기존 설치본을 직접 수정했다면 갱신 전에 별도로 백업합니다. 공개 패키지는 사용자별 수정본이나 추가 파일의 자동 병합을 보장하지 않습니다.

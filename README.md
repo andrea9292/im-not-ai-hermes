@@ -2,7 +2,7 @@
 
 `im-not-ai-hermes`는 [`epoko77-ai/im-not-ai`](https://github.com/epoko77-ai/im-not-ai)를 Hermes Agent에서 사용할 수 있도록 옮겨 만든 한국어 글쓰기 품질 개선 스킬입니다.
 
-이 저장소는 `andrea9292`가 관리하는 개인 downstream 포트입니다. 원본 프로젝트의 공식 배포판이 아니며, 특정 기관이나 연구소의 공식 배포물처럼 소개하지 않습니다.
+이 저장소는 `andrea9292`가 관리하는 community downstream 포트입니다. 원본 프로젝트의 공식 배포판이 아니며, 특정 기관이나 연구소의 공식 배포물처럼 소개하지 않습니다.
 
 ## 무엇을 하는 스킬인가
 
@@ -120,8 +120,9 @@ cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/skills/writing/huma
 특정 Hermes profile에 설치하려면 profile별 `skills` 디렉터리에 복사합니다.
 
 ```bash
-mkdir -p "$HOME/.hermes/profiles/writer/skills/writing"
-cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
+PROFILE=<profile-name>
+mkdir -p "$HOME/.hermes/profiles/$PROFILE/skills/writing"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/$PROFILE/skills/writing/humanize-korean"
 ```
 
 Raw `SKILL.md` URL 설치는 권장하지 않습니다. 이 스킬은 `references/`와 `scripts/` 파일을 함께 사용합니다. 따라서 단일 파일 설치 방식에서는 필요한 참고 파일이 빠질 수 있습니다.

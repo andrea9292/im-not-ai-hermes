@@ -32,7 +32,7 @@
 ### 검증
 
 - Python 3.11·3.12 GitHub Actions를 추가했습니다.
-- 로컬 pytest 133개와 unittest 134개(각 1개 skip), quick-rules 동기화 검사를 통과했습니다.
+- 개발 환경에서 pytest 133개와 unittest 134개(각 1개 skip), quick-rules 동기화 검사를 통과했습니다.
 - 임시 `HERMES_HOME`에서 패키지 설치와 skill 로딩을 검증했습니다.
 
 ## 2.0.0-hermes.1 (2026-05-29)

@@ -435,8 +435,9 @@ mkdir -p "$HOME/.hermes/skills/writing"
 cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/skills/writing/humanize-korean"
 
 # Named profile
-mkdir -p "$HOME/.hermes/profiles/writer/skills/writing"
-cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/writer/skills/writing/humanize-korean"
+PROFILE=<profile-name>
+mkdir -p "$HOME/.hermes/profiles/$PROFILE/skills/writing"
+cp -R im-not-ai-hermes/skills/humanize-korean "$HOME/.hermes/profiles/$PROFILE/skills/writing/humanize-korean"
 ```
 
 Start a new Hermes session or reset/reload skills after installation so the skill registry can refresh.
