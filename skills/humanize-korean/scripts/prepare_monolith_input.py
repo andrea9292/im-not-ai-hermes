@@ -44,12 +44,13 @@ import traceback
 from datetime import date
 from pathlib import Path
 
-# Resolve the self-contained Hermes skill package layout:
+# Resolve the self-contained Hermes skill package layout. Only packaged
+# references are anchored here; user input/output paths are anchored to CWD.
 #   {skill_root}/scripts/prepare_monolith_input.py
 #   {skill_root}/references/metrics.py
 HERE = Path(__file__).resolve().parent
-PROJECT_ROOT = HERE.parent
-METRICS_DIR = PROJECT_ROOT / "references"
+SKILL_ROOT = HERE.parent
+METRICS_DIR = SKILL_ROOT / "references"
 
 # Make metrics.py importable without polluting global state.
 sys.path.insert(0, str(METRICS_DIR))
@@ -85,12 +86,12 @@ def _resolve_run_dir(run_dir_arg: str | None, text_arg: str | None) -> Path:
     if run_dir_arg:
         rd = Path(run_dir_arg)
         if not rd.is_absolute():
-            rd = PROJECT_ROOT / rd
+            rd = Path.cwd() / rd
         rd.mkdir(parents=True, exist_ok=True)
         return rd
     if text_arg is None:
         raise SystemExit("Either --run-dir or --text is required")
-    workspace = PROJECT_ROOT / "_workspace"
+    workspace = Path.cwd() / "_workspace"
     rd = _next_run_dir(workspace)
     rd.mkdir(parents=True, exist_ok=True)
     return rd
@@ -373,9 +374,13 @@ HEADING_LINE_RE = re.compile(
     r"|[가나다라마바사아자차카타파하]\.\s"
     r"|\([0-9가-힣]+\))"
 )
-# 각주 정의 줄. \d+\) 는 헤딩 정규식과 겹치지만 각주 판정은 문서 말미의
-# 연속 블록에만 적용되고 그 구간은 본문 청킹에서 제외되므로 충돌 없음.
-FOOTNOTE_LINE_RE = re.compile(r"^(?:\d+\)\s|\[\d+\]\s)")
+# 각주 정의 줄. 숫자식(`1)`, `[1]`)과 Markdown 정의(`[^id]:`)를 지원한다.
+# 숫자식은 헤딩 정규식과 겹치지만 각주 판정은 문서 말미의 연속 블록에만
+# 적용되고 그 구간은 본문 청킹에서 제외되므로 충돌 없음.
+FOOTNOTE_LINE_RE = re.compile(
+    r"^(?:\d+\)\s|\[\d+\]\s|\[\^[^\]]+\]:\s*)"
+)
+FOOTNOTE_CONTINUATION_RE = re.compile(r"^(?: {2,}|\t)\S")
 
 _PARA_SEP_RE = re.compile(r"\n{2,}")
 # 문장 경계: 종결 부호(+닫는 따옴표류) 뒤 공백. 컷은 공백 런 끝 = 다음 문장 시작.
@@ -404,20 +409,23 @@ def _line_spans(text: str) -> list[tuple[int, int]]:
 def find_footnote_block_start(text: str) -> int | None:
     """문서 말미의 각주 모음 블록 시작 offset. 없으면 None.
 
-    끝에서 역방향으로 훑으며 빈 줄은 통과, 각주 패턴 줄은 블록에 포함,
-    그 외 줄을 만나면 중단. 최소 1개의 각주 줄이 있어야 블록으로 본다.
+    문서 말미까지 이어지는 숫자식/Markdown 각주 정의 블록을 찾는다.
+    Markdown 각주의 들여쓴 다중행 정의도 함께 보호한다. 최소 1개의 각주
+    정의 줄이 있어야 블록으로 본다.
     """
     spans = _line_spans(text)
-    start: int | None = None
-    for ls, le in reversed(spans):
-        line = text[ls:le]
-        if not line.strip():
+    for idx, (ls, le) in enumerate(spans):
+        if not FOOTNOTE_LINE_RE.match(text[ls:le]):
             continue
-        if FOOTNOTE_LINE_RE.match(line):
-            start = ls
-            continue
-        break
-    return start
+        suffix_is_footnotes = all(
+            not text[a:b].strip()
+            or FOOTNOTE_LINE_RE.match(text[a:b])
+            or FOOTNOTE_CONTINUATION_RE.match(text[a:b])
+            for a, b in spans[idx:]
+        )
+        if suffix_is_footnotes:
+            return ls
+    return None
 
 
 def _has_substantive(body: str, a: int, b: int) -> bool:
@@ -774,7 +782,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.diagnosis:
         diag_path = Path(args.diagnosis)
         if not diag_path.is_absolute():
-            diag_path = PROJECT_ROOT / diag_path
+            diag_path = Path.cwd() / diag_path
         if not diag_path.exists():
             raise SystemExit(f"--diagnosis file not found: {diag_path}")
         diagnosis = diag_path.read_text(encoding="utf-8")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Humanize KR v2.0.1 — 청크 윤문 결과 재조립기.
+"""Humanize KR v2.2 — 청크 윤문 결과 재조립기.
 
 `prepare_monolith_input.py --chunk` 가 만든 chunk_manifest.json 순서대로
 청크별 윤문 결과(02_chunk_{NN}_rewritten.txt)를 병합해 03_reassembled.md 를

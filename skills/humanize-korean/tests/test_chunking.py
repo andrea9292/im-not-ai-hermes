@@ -14,6 +14,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -62,6 +64,16 @@ FOOTNOTED = (
     "1) 김철수, 『가상의 책』, 가상출판사, 2020, 45쪽.\n"
     "2) 이영희, \"가상의 논문\", 가상학회지 12(3), 2021.\n"
     "3) 박민수 외, 『또 다른 가상의 책』, 2022.\n"
+)
+
+MARKDOWN_FOOTNOTED = (
+    "본문은 첫 번째 출처를 참조한다.[^source-a]\n\n"
+    "다른 문장도 두 번째 출처를 참조한다.[^긴-식별자]\n\n"
+    "[^source-a]: 홍길동. (2026). 가상의 논문.\n"
+    "    https://example.com/source-a\n\n"
+    "[^긴-식별자]: 김연구. (2025). 또 다른 자료.\n"
+    "    첫째 줄에 이어지는 다중행 각주 설명이다.\n"
+    "    둘째 줄도 같은 각주 정의에 속한다.\n"
 )
 
 
@@ -121,6 +133,7 @@ class ChunkSplitTests(unittest.TestCase):
             "short": SHORT,
             "academic": ACADEMIC,
             "footnoted": FOOTNOTED,
+            "markdown_footnoted": MARKDOWN_FOOTNOTED,
             "long20k": LONG20K,
             "giant_sentenced": GIANT_SENTENCED_PARA,
             "unsplittable": UNSPLITTABLE,
@@ -200,6 +213,18 @@ class ChunkSplitTests(unittest.TestCase):
                         and ("출판사" in ln or "학회지" in ln or "가상" in ln),
                         f"{name}: 각주 정의가 본문 청크에 섞임: {ln!r}",
                     )
+
+    def test_markdown_footnote_block_passthrough_with_continuations(self) -> None:
+        spans, _ = self._split(MARKDOWN_FOOTNOTED)
+        self.assertTrue(spans[-1]["passthrough"])
+        block = MARKDOWN_FOOTNOTED[spans[-1]["start"] : spans[-1]["end"]]
+        self.assertTrue(block.startswith("[^source-a]:"))
+        self.assertIn("    https://example.com/source-a", block)
+        self.assertIn("    둘째 줄도 같은 각주 정의에 속한다.", block)
+        self.assertEqual(
+            PREP.find_footnote_block_start(MARKDOWN_FOOTNOTED),
+            MARKDOWN_FOOTNOTED.index("[^source-a]:"),
+        )
 
     def test_no_footnotes_no_passthrough(self) -> None:
         spans, _ = self._split(ACADEMIC)
@@ -285,6 +310,9 @@ class ChunkCliRoundTripTests(unittest.TestCase):
     def test_roundtrip_footnoted(self) -> None:
         self._run_pipeline(FOOTNOTED)
 
+    def test_roundtrip_markdown_footnoted(self) -> None:
+        self._run_pipeline(MARKDOWN_FOOTNOTED)
+
     def test_roundtrip_academic(self) -> None:
         self._run_pipeline(ACADEMIC)
 
@@ -369,6 +397,79 @@ class ChunkCliRoundTripTests(unittest.TestCase):
             self.assertFalse(
                 os.path.exists(os.path.join(td, "chunk_manifest.json")),
                 "--chunk 없이 manifest 가 생기면 안 된다",
+            )
+
+    def test_relative_run_dir_shared_by_absolute_cli_scripts(self) -> None:
+        """다른 CWD에서도 prepare와 reassemble이 같은 상대 run-dir을 쓴다."""
+        prep_script = os.path.abspath(os.path.join(SCRIPTS, "prepare_monolith_input.py"))
+        reasm_script = os.path.abspath(os.path.join(SCRIPTS, "reassemble_chunks.py"))
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "relative-run")
+            os.mkdir(run_dir)
+            with open(os.path.join(td, "diagnosis.txt"), "w", encoding="utf-8") as f:
+                f.write("상대 경로 진단 파일이다.")
+            with open(os.path.join(run_dir, "01_input.txt"), "w", encoding="utf-8") as f:
+                f.write(MARKDOWN_FOOTNOTED)
+
+            subprocess.run(
+                [
+                    sys.executable,
+                    prep_script,
+                    "--chunk",
+                    "--run-dir",
+                    "relative-run",
+                    "--diagnosis",
+                    "diagnosis.txt",
+                ],
+                cwd=td,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            with open(os.path.join(run_dir, "chunk_manifest.json"), encoding="utf-8") as f:
+                manifest = json.load(f)
+            first_input = next(
+                entry["input_file"] for entry in manifest["chunks"] if not entry["passthrough"]
+            )
+            with open(os.path.join(run_dir, first_input), encoding="utf-8") as f:
+                self.assertIn("상대 경로 진단 파일이다.", f.read())
+            for entry in manifest["chunks"]:
+                if entry["passthrough"]:
+                    continue
+                original = MARKDOWN_FOOTNOTED[entry["start"] : entry["end"]]
+                with open(
+                    os.path.join(run_dir, entry["rewritten_file"]),
+                    "w",
+                    encoding="utf-8",
+                ) as f:
+                    f.write(original)
+
+            subprocess.run(
+                [sys.executable, reasm_script, "--run-dir", "relative-run", "--strict"],
+                cwd=td,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            with open(os.path.join(run_dir, "03_reassembled.md"), encoding="utf-8") as f:
+                self.assertEqual(f.read(), MARKDOWN_FOOTNOTED)
+
+    def test_inline_text_workspace_uses_cli_cwd(self) -> None:
+        prep_script = os.path.abspath(os.path.join(SCRIPTS, "prepare_monolith_input.py"))
+        with tempfile.TemporaryDirectory() as td:
+            subprocess.run(
+                [sys.executable, prep_script, "--text", SHORT],
+                cwd=td,
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            workspace = os.path.join(td, "_workspace")
+            self.assertTrue(os.path.isdir(workspace))
+            runs = os.listdir(workspace)
+            self.assertEqual(len(runs), 1)
+            self.assertTrue(
+                os.path.isfile(os.path.join(workspace, runs[0], "01_input.txt"))
             )
 
 

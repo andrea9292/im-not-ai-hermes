@@ -1,4 +1,4 @@
-# Humanize KR Scholarship Reference (v2.0)
+# Humanize KR Scholarship Reference (v2.0 core, taxonomy v2.2 sync)
 
 > **외부 SSOT** — 본진 분류 체계(`references/ai-tell-taxonomy.md`)는 패턴 행마다 한 줄 메타(`source_short`)로 이 파일을 가리킨다. 학술 출처 전문(full text)은 본 파일에 보존하여 SSOT 룰북의 슬림성을 해치지 않는다.
 >
@@ -9,7 +9,7 @@
 
 ## 한국 번역학계 8대 번역투 정통성 계보
 
-> 보고서 §III.3 "8대 번역투 유형의 통합" 매핑. 본진 SSOT 패턴 ID는 v2.0 신규 4건(A-16~19) + 보강 4건(A-15·A-7·F-4·E-2)에 부착 예정.
+> 보고서 §III.3 "8대 번역투 유형의 통합" 매핑. 본진 SSOT 패턴 ID에는 v2.0 신규 4건(A-16~19) + 보강 4건(A-15·A-7·F-4·E-2)이 반영돼 있다.
 
 ### 1. 무생물 주어 + 타동사 구문
 

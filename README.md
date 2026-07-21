@@ -189,12 +189,17 @@ notes:
 
 정량 지표는 파일 기반 검토에서 보조 신호로 쓸 수 있습니다. 지표 도구는 표준 라이브러리만 사용하며, `prepare_monolith_input.py`는 `route_hint`도 함께 기록합니다.
 
+다음 예제는 저장소 루트에서 실행합니다.
+
 ```bash
-cd skills/humanize-korean
-python scripts/prepare_monolith_input.py --text "분석할 한국어 원문" --genre essay
-python references/metrics_v2.py --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
-python scripts/verify_change_rate.py --before 원문.md --after 윤문본.md
+SKILL_ROOT="$PWD/skills/humanize-korean"
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --text "분석할 한국어 원문" --genre essay
+python "$SKILL_ROOT/references/metrics_v2.py" --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before 원문.md --after 윤문본.md
 ```
+
+상대 입력·출력 경로와 자동 `_workspace/`는 현재 작업 디렉터리를 기준으로
+해석합니다. 설치된 skill package 안에는 작업 결과를 쓰지 않습니다.
 
 정량값과 경로 권고는 판정기가 아니라 참고 신호입니다. 변경률은 실제 전후 파일을 비교한 결정적 검증값으로 사용하되, 최종 문장 판단은 의미 보존, 장르 적합성, 문장 맥락, 사용자의 목적을 기준으로 합니다.
 

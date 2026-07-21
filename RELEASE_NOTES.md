@@ -10,7 +10,7 @@
 - 15,000자 이하에서는 길이만으로 heavy를 강제하지 않으며, 15,000자 초과는 upstream과 같이 heavy 신호로 처리합니다. Heavy여도 실제 body chunk가 2개 이상일 때만 청킹합니다.
 - 30% 경고·50% 중단의 결정적 변경률 게이트를 추가했습니다.
 - taxonomy에서 `quick-rules.md`를 생성하는 빌드 계약을 추가했습니다.
-- 헤딩 승격, 각주 passthrough, source hash 검증을 포함한 손실 없는 청킹·재조립 도구를 추가했습니다.
+- 헤딩 승격, 숫자식·Markdown 다중행 각주 passthrough, source hash 검증을 포함한 손실 없는 청킹·재조립 도구를 추가했습니다.
 - register, 구조, 각주, 직접 인용 보존을 점검하는 골든 회귀 테스트를 추가했습니다.
 
 ### taxonomy와 근거
@@ -26,13 +26,14 @@
 - Claude Code의 agent·command·plugin·model routing은 포함하지 않았습니다.
 - main Hermes agent가 세 경로를 직접 수행하도록 `SKILL.md`를 재작성했습니다.
 - helper script가 설치된 skill package의 `references/`를 찾도록 경로를 조정했습니다.
+- 상대 `--run-dir`·`--diagnosis`·자동 `_workspace/`는 사용자 CWD를 기준으로 처리해 설치된 skill package에 작업 결과를 쓰지 않도록 했습니다.
 - `delegate_task`는 heavy 검토의 선택 사항이며, 부모 agent가 최종 결과를 검증하도록 했습니다.
 
 ### 검증
 
 - Python 3.11·3.12 GitHub Actions를 추가했습니다.
-- 로컬에서 전체 테스트와 quick-rules 동기화 검사를 통과했습니다.
-- 임시 `HERMES_HOME` 설치 검증과 writer profile 로컬 확장 보존 설치를 수행합니다.
+- 로컬 pytest 133개와 unittest 134개(각 1개 skip), quick-rules 동기화 검사를 통과했습니다.
+- 임시 `HERMES_HOME` 설치 검증과 writer profile 로컬 확장 보존 설치를 수행했습니다.
 
 ## 2.0.0-hermes.1 (2026-05-29)
 

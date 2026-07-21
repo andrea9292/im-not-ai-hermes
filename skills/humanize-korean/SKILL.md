@@ -142,8 +142,13 @@ Use one of three paths. User instructions override metrics: `정밀`, `엄격`, 
 For a file workflow or repeatable diagnostic, run:
 
 ```bash
-python scripts/prepare_monolith_input.py --run-dir <run-dir> --genre <genre>
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
+  --run-dir <run-dir> --genre <genre>
 ```
+
+`SKILL_ROOT` is the absolute installed package path. Run from the user's working
+directory: relative `--run-dir`, `--diagnosis`, and automatic `_workspace/`
+paths resolve against the current working directory, never the installed skill.
 
 Read `route_hint` from `00_metrics.json`. If metrics fail or `route_hint` is absent, use `standard`. Treat the route as an advisory, not a detector verdict.
 
@@ -176,7 +181,7 @@ Optional `delegate_task` review is allowed for heavy work, but the parent Hermes
 ### 5. Apply the deterministic gate for file output
 
 ```bash
-python scripts/verify_change_rate.py --before <original> --after <final>
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
 ```
 
 - exit `0`, below 30%: proceed
@@ -196,14 +201,15 @@ python scripts/verify_change_rate.py --before <original> --after <final>
 
 Metrics are optional. Use them when the text is long, when the user asks for a diagnostic report, or when a file workflow benefits from repeatable evidence.
 
-Example commands from the skill package root. From another working directory, use the scripts' absolute paths.
+Run from the user's working directory with `SKILL_ROOT` set to the absolute
+installed package path:
 
 ```bash
-python scripts/prepare_monolith_input.py \
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
   --text "분석할 한국어 원문" \
   --genre essay
 
-python references/metrics_v2.py \
+python "$SKILL_ROOT/references/metrics_v2.py" \
   --input _workspace/2026-05-25-001/01_input.txt \
   --genre essay \
   --output _workspace/2026-05-25-001/00_metrics_v2.json
@@ -226,21 +232,22 @@ For human-facing output, do not dump raw metrics unless requested. Summarize the
 
 ## Deterministic Helper Commands
 
-Run these from the skill package root.
+Run these from the user's working directory. Relative input/output paths resolve
+against that directory; `SKILL_ROOT` points to the installed package.
 
 ```bash
 # Confirm the generated quick rules match taxonomy metadata.
-python scripts/build_quick_rules.py --check
+python "$SKILL_ROOT/scripts/build_quick_rules.py" --check
 
 # Prepare a normal route-aware input bundle.
-python scripts/prepare_monolith_input.py --run-dir <run-dir> --genre essay
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay
 
 # Heavy-only: create lossless chunks when the text truly exceeds the threshold.
-python scripts/prepare_monolith_input.py --run-dir <run-dir> --genre essay --chunk
-python scripts/reassemble_chunks.py --run-dir <run-dir> --strict
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay --chunk
+python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict
 
 # Measure the adopted rewrite rather than trusting an LLM estimate.
-python scripts/verify_change_rate.py --before <original> --after <final>
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
 ```
 
 The helper scripts are standard-library only. Metrics and route hints support editorial attention; they do not establish whether a text was written by AI.
