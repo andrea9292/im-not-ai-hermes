@@ -19,9 +19,9 @@
 | Hermes skill name | `humanize-korean` |
 | Repository | `andrea9292/im-not-ai-hermes` |
 | Package path | `skills/humanize-korean/` |
-| Hermes port version | `2.0.0-hermes.1` |
+| Hermes port version | `2.2.0-hermes.1` |
 | Original project | `epoko77-ai/im-not-ai` |
-| Original baseline | v2.0.0-era, upstream commit `8071726`까지 반영 |
+| Original baseline | v2.2.0, upstream commit `3120cb81`까지 반영 |
 | License | MIT |
 | Distribution | Hermes tap-friendly skill source |
 
@@ -30,15 +30,15 @@
 이 포트의 버전은 원본 버전과 Hermes 포트 패치 번호를 함께 표기합니다.
 
 ```text
-2.0.0-hermes.1
+2.2.0-hermes.1
 ```
 
 이 버전 표기의 의미는 다음과 같습니다.
 
-- `2.0.0`: 원본 `epoko77-ai/im-not-ai`의 v2.0.0 계열 taxonomy, quick rules, metrics, scholarship reference를 기준으로 합니다.
-- `hermes.1`: Hermes Agent용 설치 구조, frontmatter, 작업 지시, 경로 처리, tap 배포 방식을 반영한 첫 번째 Hermes 포트입니다.
+- `2.2.0`: 원본 `epoko77-ai/im-not-ai`의 v2.2.0 taxonomy, route-aware workflow, 결정적 검증 도구를 기준으로 합니다.
+- `hermes.1`: v2.2.0을 Hermes Agent용 설치 구조, frontmatter, 작업 지시, 경로 처리, tap 배포 방식으로 옮긴 첫 포트입니다.
 
-원본이 새 버전으로 올라가면, 원본 변경분을 검토한 뒤 `2.1.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
+원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.3.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
 
 ## 왜 한국어 특화인가
 
@@ -74,8 +74,11 @@ skills/humanize-korean/references/rewriting-playbook.md # 카테고리별 윤문
 skills/humanize-korean/references/scholarship.md        # 번역투·후편집투 관련 근거 메모
 skills/humanize-korean/references/metrics.py            # v1.6 계열 정량 지표 보조 도구
 skills/humanize-korean/references/metrics_v2.py         # v2.0 후편집투·간섭 지표 보조 도구
-skills/humanize-korean/scripts/prepare_monolith_input.py# 파일 작업용 입력 준비 스크립트
-skills/humanize-korean/tests/                           # 지표 도구 회귀 테스트
+skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·청킹 준비
+skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
+skills/humanize-korean/scripts/verify_change_rate.py    # 결정적 변경률 게이트
+skills/humanize-korean/scripts/reassemble_chunks.py     # 손실 없는 청크 재조립
+skills/humanize-korean/tests/                           # 지표·경로·청킹·골든 회귀 테스트
 ```
 
 ## 설치
@@ -143,18 +146,19 @@ humanize-korean으로 이 글의 번역투와 기계적으로 느껴지는 표�
 긴 글이라 정밀하게 검토해줘.
 ```
 
-## 빠른 경로와 정밀 경로
+## 세 가지 경로
 
-기본은 빠른 경로입니다. 짧거나 중간 길이의 글에서는 `quick-rules.md`와 핵심 분류 체계를 중심으로 읽고, 의미 보존을 우선하면서 문장 단위로 다듬습니다.
+v2.2 포트는 `route_hint`와 사용자 요청에 따라 작업 강도를 나눕니다.
 
-정밀 경로는 다음 상황에서 사용합니다.
+| 경로 | 기본 처리 | 대상 |
+|---|---|---|
+| `light` | 보수 윤문 1회 | 이미 잘 쓴 글, 기계적 신호가 적은 글 |
+| `standard` | 지배 패턴 진단 후 겨냥 윤문 | 보통의 AI 초안과 혼합형 글 |
+| `heavy` | 진단, 윤문, 변경률 게이트, 의미 보존 감사 | 중증 패턴, 15,000자 초과, 정밀 요청, 검증 증적이 필요한 글 |
 
-- 사용자가 정밀 검토를 요청한 경우
-- 긴 글이거나 게시·제출 전 검토인 경우
-- 첫 윤문 결과가 여전히 기계적으로 느껴지는 경우
-- 변경 전후의 근거와 카테고리별 설명이 필요한 경우
+15,000자 이하에서는 입력 길이만으로 heavy 경로를 강제하지 않습니다. 1만 자 안팎의 글도 기본적으로 한 번에 처리합니다. 15,000자를 넘으면 upstream 계약에 따라 heavy를 권고하지만, 이 경우에도 shim이 실제 body chunk를 2개 이상 만들 때만 청크별 윤문과 재조립을 사용합니다.
 
-Hermes에서는 원본의 고정된 5-role runtime을 그대로 실행하지 않습니다. 대신 `SKILL.md`에 적힌 Hermes workflow를 따르고, 필요하면 `delegate_task` 같은 Hermes 도구로 탐지, 윤문, 의미 보존 검토를 분리할 수 있습니다.
+Hermes에서는 원본의 Claude Code agent runtime을 실행하지 않습니다. Main Hermes agent가 세 경로를 직접 수행하고, 필요할 때만 `delegate_task`로 검토를 분리합니다. 최종 판단과 파일 검증은 main agent가 맡습니다.
 
 ## 산출물 기대값
 
@@ -183,15 +187,16 @@ notes:
 
 ## 선택 지표
 
-정량 지표는 긴 글이나 파일 기반 검토에서 보조 신호로 쓸 수 있습니다. 지표 도구는 표준 라이브러리만 사용합니다.
+정량 지표는 파일 기반 검토에서 보조 신호로 쓸 수 있습니다. 지표 도구는 표준 라이브러리만 사용하며, `prepare_monolith_input.py`는 `route_hint`도 함께 기록합니다.
 
 ```bash
 cd skills/humanize-korean
 python scripts/prepare_monolith_input.py --text "분석할 한국어 원문" --genre essay
 python references/metrics_v2.py --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
+python scripts/verify_change_rate.py --before 원문.md --after 윤문본.md
 ```
 
-정량값은 판정기가 아니라 참고 신호입니다. 최종 판단은 의미 보존, 장르 적합성, 문장 맥락, 사용자의 목적을 기준으로 합니다.
+정량값과 경로 권고는 판정기가 아니라 참고 신호입니다. 변경률은 실제 전후 파일을 비교한 결정적 검증값으로 사용하되, 최종 문장 판단은 의미 보존, 장르 적합성, 문장 맥락, 사용자의 목적을 기준으로 합니다.
 
 ## 윤문 대상에서 제외할 것
 

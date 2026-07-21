@@ -25,6 +25,7 @@
 4. Claude Code 전용 요소는 Hermes workflow에 맞게 조정하거나 제외합니다.
 5. `SOURCE.md`에 upstream commit, sync date, file mapping 변경을 기록합니다.
 6. `RELEASE_NOTES.md`에 새 Hermes port version을 기록합니다.
+7. taxonomy를 바꾸면 `build_quick_rules.py`로 생성물을 갱신합니다.
 
 ## 3. 배포 전 검증
 
@@ -60,7 +61,12 @@ PY
 
 ```bash
 python3 -m pytest skills/humanize-korean/tests -q
+python3 skills/humanize-korean/scripts/build_quick_rules.py --check
 ```
+
+### CI 확인
+
+GitHub Actions는 Python 3.11·3.12에서 전체 테스트와 quick-rules 동기화를 검사합니다.
 
 ### Hermes inspect 확인
 
@@ -115,7 +121,7 @@ git push
 writer profile 등에 설치된 hub skill을 갱신하려면 다음을 사용합니다.
 
 ```bash
-hermes --profile writer skills update
+hermes --profile writer skills check
 ```
 
 필요하면 명시적으로 다시 설치합니다.
@@ -125,7 +131,7 @@ hermes --profile writer skills tap add andrea9292/im-not-ai-hermes
 hermes --profile writer skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
 ```
 
-기존 로컬 스킬이 있는 profile에 덮어쓸 때는 먼저 백업합니다.
+`skills update`는 로컬 확장 파일을 보존하지 못할 수 있으므로 바로 실행하지 않습니다. 기존 로컬 스킬이 있는 profile에 덮어쓸 때는 먼저 백업하고, 공개 포트 파일을 반영한 뒤 profile-local 파일을 다시 합칩니다.
 
 ```bash
 tar -czf /Users/Andrea/Documents/hermes/output/$(date +%F)_writer-humanize-korean-backup.tar.gz \
