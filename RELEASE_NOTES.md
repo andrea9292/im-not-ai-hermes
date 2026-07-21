@@ -22,7 +22,8 @@ upstream v2.2의 경로별 역할 분리를 Hermes-native delegation으로 복�
 - 진단 패턴 3~6개와 taxonomy ID, strict 필수 산출물, `09_finalize.json` 스키마와 verdict를 검사합니다.
 - 헤딩, 코드 펜스, 인라인 코드, URL, 수치, 직접 인용, Markdown 각주를 원문과 대조합니다.
 - `전달하지 못가능합니다`류 기계 치환 비문, 격식 상향, 새 상투구 주입을 검사합니다.
-- 목록 구조는 upstream C-9/J-3 변환을 기본 허용하고, 사용자가 명시적으로 보존한 실행에서만 `--preserve-lists`로 고정합니다.
+- 목록 구조는 upstream C-2/C-9 변환을 기본 허용하고, 사용자가 명시적으로 보존한 실행에서만 `--preserve-lists`로 고정합니다.
+- 결정적 validator는 파일·스키마와 표면 보존 토큰을 검사합니다. 주체 귀속·범위·판단 강도 같은 의미 보존 판정은 fresh-context finalizer가 맡습니다.
 - chunk→non-chunk 모드 전환 때 낡은 manifest·청크·재조립 산출물을 제거해 이전 실행이 섞이지 않게 했습니다.
 - orchestration 계약과 runtime prompt 패키징을 회귀 테스트로 고정했습니다.
 

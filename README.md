@@ -79,7 +79,7 @@ skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·�
 skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
 skills/humanize-korean/scripts/verify_change_rate.py    # 결정적 변경률 게이트
 skills/humanize-korean/scripts/reassemble_chunks.py     # 손실 없는 청크 재조립
-skills/humanize-korean/scripts/validate_stage_artifacts.py # 단계 산출물·보존성 검증
+skills/humanize-korean/scripts/validate_stage_artifacts.py # 단계 산출물·표면 보존 검증
 skills/humanize-korean/scripts/update_execution_state.py # Hermes 역할 완료 provenance
 skills/humanize-korean/scripts/check_package_contents.py # 릴리즈 후보 필수 파일 검사
 skills/humanize-korean/tests/                           # 지표·경로·청킹·골든 회귀 테스트
@@ -198,7 +198,7 @@ self_check:
 
 `change_rate_actual`과 `gate_exit`은 child가 확정하지 않고, 부모가 `verify_change_rate.py --stamp-summary`로 기록합니다.
 
-`heavy` 또는 `--strict` 파일 작업은 `00_execution.json`, `02_diagnosis.md`, `final_pre_finalize.md`, `final.md`, `09_finalize.json`이 모두 존재하고 단계 검증기를 통과해야 완료로 봅니다. `delegate_task`를 사용할 수 없는 환경에서 main agent가 대신 처리했다면 이를 upstream-equivalent strict라고 부르지 않고 degraded fallback으로 명시합니다.
+`heavy` 또는 `--strict` 파일 작업은 `00_execution.json`, `00_metrics.json` 또는 `00_metrics.error`, `01_input.txt`, `02_diagnosis.md`, `final_pre_finalize.md`, `final.md`, `09_finalize.json`이 모두 존재하고 단계 검증기를 통과해야 완료로 봅니다. 여러 body chunk를 사용했다면 `chunk_manifest.json`, manifest가 지정한 청크 윤문본, `03_reassembly_report.json`도 필요합니다. 결정적 validator는 파일·스키마와 구조·수치·인용·코드·각주의 표면 보존을 검사하며, 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조합니다. `delegate_task`를 사용할 수 없는 환경에서 main agent가 대신 처리했다면 이를 upstream-equivalent strict라고 부르지 않고 degraded fallback으로 명시합니다.
 
 ## 선택 지표
 

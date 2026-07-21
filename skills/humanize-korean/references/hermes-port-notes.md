@@ -37,7 +37,7 @@
 - `scripts/build_quick_rules.py`: taxonomy-to-quick-rules 생성·동기화 검사
 - `scripts/reassemble_chunks.py`: source hash와 문자 수 대사를 포함한 청크 재조립
 - `scripts/verify_change_rate.py`: 30% 경고·50% 중단의 결정적 게이트
-- `scripts/validate_stage_artifacts.py`: 역할별 필수 산출물과 구조·수치·인용·코드·각주 보존 검증
+- `scripts/validate_stage_artifacts.py`: 역할별 필수 산출물과 구조·수치·인용·코드·각주의 표면 보존 검증. 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조
 - `scripts/update_execution_state.py`: 부모가 검증한 Hermes 역할 completion과 게이트 결과 기록
 - `references/runtime-agents/`: Hermes용 diagnostician·monolith·finalizer 역할 계약
 - `tests/`: metrics, route, 청킹, 골든 픽스처 회귀 테스트

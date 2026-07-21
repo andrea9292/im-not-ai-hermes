@@ -31,7 +31,7 @@
 | `scripts/build_quick_rules.py` | `skills/humanize-korean/scripts/build_quick_rules.py` |
 | `scripts/reassemble_chunks.py` | `skills/humanize-korean/scripts/reassemble_chunks.py` |
 | `scripts/verify_change_rate.py` | `skills/humanize-korean/scripts/verify_change_rate.py` |
-| strict 단계·fidelity 실행 계약 | `skills/humanize-korean/scripts/validate_stage_artifacts.py` |
+| strict 단계·표면 보존 실행 계약 | `skills/humanize-korean/scripts/validate_stage_artifacts.py` |
 | Hermes 비동기 역할 completion 증적 | `skills/humanize-korean/scripts/update_execution_state.py` |
 | 결정적·골든·청킹·route 테스트 | `skills/humanize-korean/tests/` |
 | `.github/workflows/test.yml`의 검증 의도 | `.github/workflows/test.yml`의 Hermes 패키지 경로 |

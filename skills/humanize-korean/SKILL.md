@@ -103,7 +103,7 @@ Load the smallest useful reference first.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/verify_change_rate.py`: Deterministic post-edit gate; below 30% passes, 30–50% warns, and 50% or more aborts adoption.
 - `scripts/reassemble_chunks.py`: Lossless chunk reassembler with source-hash and size-ratio checks.
-- `scripts/validate_stage_artifacts.py`: Validates diagnosis, rewrite, and strict/finalize artifacts plus deterministic fidelity invariants.
+- `scripts/validate_stage_artifacts.py`: Validates diagnosis, rewrite, and strict/finalize artifacts plus deterministic surface-preservation invariants. Semantic attribution, scope, and judgment strength remain the fresh-context finalizer's responsibility.
 - `scripts/update_execution_state.py`: Records parent-verified Hermes delegation completions and final gate provenance for strict runs.
 - `scripts/check_package_contents.py`: Fails release-candidate validation if a required runtime role, script, or regression test is missing.
 - `references/runtime-agents/diagnostician.md`: Hermes `delegate_task` role contract for dominant-pattern diagnosis.
@@ -133,7 +133,7 @@ Use one of three paths. User instructions override metrics: `정밀`, `엄격`, 
 ### 1. Identify the boundary
 
 - Determine inline text versus file workflow, genre, register, formatting constraints, and requested strength.
-- Preserve meaning-bearing structure, headings as independent lines, tables, footnotes, links, frontmatter, and direct quotations. Do not flatten useful lists or checklists. A mechanical list may become prose only when an upstream C-9/J-3 rule clearly applies, the genre supports it, and no item or ordering information is lost. Explicit user preservation constraints override that option.
+- Preserve meaning-bearing structure, headings as independent lines, tables, footnotes, links, frontmatter, and direct quotations. Do not flatten useful lists or checklists. A mechanical list may become prose only when an upstream C-2/C-9 rule clearly applies, the genre supports it, and no item or ordering information is lost. Explicit user preservation constraints override that option.
 - Do not infer a private house style from unrelated local files. A separate user-provided style guide may be layered on top.
 
 ### 2. Load the smallest rule set
@@ -304,7 +304,7 @@ python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict -
 # Measure the adopted rewrite rather than trusting an LLM estimate.
 python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final> --stamp-summary
 
-# Validate stage contracts and deterministic fidelity invariants.
+# Validate stage contracts and deterministic surface-preservation invariants.
 python "$SKILL_ROOT/scripts/validate_stage_artifacts.py" \
   --run-dir <run-dir> --stage all --strict
 
