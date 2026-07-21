@@ -642,6 +642,7 @@ def _validate_finalize(run_dir: Path, issues: list[Issue]) -> bool:
 
     fidelity = payload.get("fidelity")
     fidelity_pass: bool | None = None
+    fidelity_violations: list[object] | None = None
     if not isinstance(fidelity, dict):
         issues.append(Issue("finalize_fidelity", "fidelity는 object여야 합니다"))
     else:
@@ -651,6 +652,8 @@ def _validate_finalize(run_dir: Path, issues: list[Issue]) -> bool:
             fidelity_pass = fidelity["pass"]
         if not isinstance(fidelity.get("violations"), list):
             issues.append(Issue("finalize_fidelity", "fidelity.violations는 배열이어야 합니다"))
+        else:
+            fidelity_violations = fidelity["violations"]
 
     naturalness = payload.get("naturalness")
     if not isinstance(naturalness, dict):
@@ -664,7 +667,8 @@ def _validate_finalize(run_dir: Path, issues: list[Issue]) -> bool:
     if type(corrections) is not int or corrections < 0:
         issues.append(Issue("finalize_corrections", "corrections_applied는 0 이상의 정수여야 합니다"))
         corrections = None
-    if not isinstance(payload.get("note"), str):
+    note = payload.get("note")
+    if not isinstance(note, str):
         issues.append(Issue("finalize_note", "note는 문자열이어야 합니다"))
 
     before_body = strip_summary(_read(backup))
@@ -682,6 +686,8 @@ def _validate_finalize(run_dir: Path, issues: list[Issue]) -> bool:
     elif verdict == "hold_and_report":
         if fidelity_pass is not False:
             issues.append(Issue("finalize_inconsistent", "hold_and_report는 fidelity.pass=false여야 합니다"))
+        if fidelity_violations == [] and isinstance(note, str) and not note.strip():
+            issues.append(Issue("finalize_inconsistent", "hold_and_report는 미해결 사유를 violations 또는 note에 기록해야 합니다"))
         return True
     return False
 

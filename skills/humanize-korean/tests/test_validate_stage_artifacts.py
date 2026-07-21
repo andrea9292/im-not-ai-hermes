@@ -261,6 +261,35 @@ class ValidateStageArtifactsTests(unittest.TestCase):
             self.assertEqual(issues, [])
             self.assertTrue(hold)
 
+    def test_hold_and_report_requires_an_unresolved_reason(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = RunFixture(Path(tmp))
+            payload = dict(FINALIZE)
+            payload["verdict"] = "hold_and_report"
+            payload["fidelity"] = {"pass": False, "violations": []}
+            payload["note"] = ""
+            (fixture.root / "09_finalize.json").write_text(
+                json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+            )
+            execution = dict(EXECUTION)
+            execution["status"] = "hold_and_report"
+            (fixture.root / "00_execution.json").write_text(
+                json.dumps(execution, ensure_ascii=False), encoding="utf-8"
+            )
+
+            issues, hold = fixture.validate()
+
+            self.assertIn("finalize_inconsistent", {x.code for x in issues})
+            self.assertTrue(hold)
+
+            payload["note"] = "원문 의미 보존 여부를 사람이 확인해야 합니다."
+            (fixture.root / "09_finalize.json").write_text(
+                json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+            )
+            issues, hold = fixture.validate()
+            self.assertEqual(issues, [])
+            self.assertTrue(hold)
+
     def test_single_chunk_document_mode_does_not_require_chunk_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture = RunFixture(Path(tmp))
