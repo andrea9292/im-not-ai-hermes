@@ -1,5 +1,37 @@
 # 릴리즈 노트
 
+## 2.2.0-hermes.2 (2026-07-21)
+
+upstream v2.2의 경로별 역할 분리를 Hermes-native delegation으로 복원했습니다. Claude Code 전용 agent 등록과 모델 라우팅은 가져오지 않지만, diagnostician→monolith→finalizer의 fresh-context 효과와 산출물 계약은 보존합니다.
+
+### 핵심 변경
+
+- `references/runtime-agents/`에 diagnostician·monolith·finalizer 역할 계약을 추가했습니다.
+- `light` 1콜, `standard` 2콜, `heavy/strict` 3+콜을 `delegate_task` 실행 계약으로 명시했습니다.
+- strict에서 delegation을 선택 사항으로 두던 기존 규칙을 폐기했습니다. 도구가 없거나 반복 실패하면 자동으로 strict 완료를 주장하지 않습니다.
+- 입력 길이로 route를 바꾸지 않습니다. Strict는 3역할을 강제하지만 청킹은 강제하지 않으며, 단일 child가 안정적으로 처리하기 어려운 장문이나 사용자 요청에서만 청크 경로를 선택합니다.
+- 청크 병렬은 manifest가 실제 body chunk를 2개 이상 만들 때만 하나의 Hermes batch로 실행하고, 각 child가 서로 다른 출력 파일만 쓰도록 했습니다.
+- main agent가 child 산출물을 다시 읽고 검증한 뒤 채택하도록 책임 경계를 정리했습니다.
+- `00_execution.json`에 실제 delegation ID, 역할 completion 순서, 부모가 측정한 변경률을 기록합니다.
+- Standard의 finalizer 승급 조건(변경률 경고, 자체검증 2개 이상 실패, 명시적 검증 증적 요청)을 복원했습니다.
+- 범용 문자열 치환을 monolith 역할의 대체물로 쓰지 못하도록 금지했습니다.
+
+### 결정적 검증
+
+- `validate_stage_artifacts.py`를 추가했습니다.
+- 진단 패턴 3~6개와 taxonomy ID, strict 필수 산출물, `09_finalize.json` 스키마와 verdict를 검사합니다.
+- 헤딩, 코드 펜스, 인라인 코드, URL, 수치, 직접 인용, Markdown 각주를 원문과 대조합니다.
+- `전달하지 못가능합니다`류 기계 치환 비문, 격식 상향, 새 상투구 주입을 검사합니다.
+- 목록 구조는 upstream C-9/J-3 변환을 기본 허용하고, 사용자가 명시적으로 보존한 실행에서만 `--preserve-lists`로 고정합니다.
+- chunk→non-chunk 모드 전환 때 낡은 manifest·청크·재조립 산출물을 제거해 이전 실행이 섞이지 않게 했습니다.
+- orchestration 계약과 runtime prompt 패키징을 회귀 테스트로 고정했습니다.
+
+### 검증
+
+- Python 3.12에서 pytest 160개 통과, 1개 skip, 22개 하위 사례 통과를 확인했습니다. Python 3.11 stdlib unittest에서는 161개 테스트 통과, 1개 skip을 확인했습니다.
+- quick-rules 동기화, Python 구문 검사, `git diff --check`를 통과했습니다.
+- 이전의 불완전 strict 실행을 단계 검증기에 넣어 diagnosis·pre-finalize·finalize 산출물 누락을 실제로 차단하는지 확인했습니다.
+
 ## 2.2.0-hermes.1 (2026-07-21)
 
 원본 `epoko77-ai/im-not-ai` v2.2.0(`3120cb81`)의 taxonomy·검증·경로 선택 변경을 Hermes-native skill package에 반영했습니다.

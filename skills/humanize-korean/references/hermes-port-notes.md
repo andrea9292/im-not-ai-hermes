@@ -6,7 +6,7 @@
 - 원본 라이선스: MIT
 - 원본 Claude Code 스킬: `.claude/skills/humanize-korean/`
 - 포팅 기준: upstream `v2.2.0`, commit `3120cb81e3b9910ba393cd8289864c583f0ac50a` (2026-07-18)
-- Hermes 포트: `2.2.0-hermes.1` (2026-07-21)
+- Hermes 포트: `2.2.0-hermes.2` (2026-07-21)
 
 이 Hermes 포트는 원저자와 기여자의 attribution을 보존합니다. Taxonomy, quick rules, rewriting playbook, scholarship reference, metrics와 결정적 검증 도구는 원본 프로젝트에서 가져와 Hermes Agent에서 사용할 수 있도록 운영 방식을 조정했습니다.
 
@@ -14,13 +14,15 @@
 
 원본 프로젝트는 Claude Code의 agent, command, plugin, model routing을 전제로 합니다. Hermes는 이를 그대로 실행 가능한 skill machinery로 취급하지 않으므로 다음과 같이 바꿉니다.
 
-- main Hermes agent가 `light`, `standard`, `heavy` 경로를 직접 수행합니다.
+- upstream의 diagnostician·monolith·finalizer 역할을 `references/runtime-agents/`의 Hermes 참조 프롬프트로 보존합니다.
+- `light` 1콜, `standard` 2콜, `heavy/strict` 3+콜을 Hermes `delegate_task` 실행 계약으로 둡니다.
 - 기본 규칙 출처는 자동 생성된 `references/quick-rules.md`입니다.
 - taxonomy와 고정 header/footer가 quick rules의 SSOT입니다.
 - metrics와 `route_hint`는 참고 신호이며 AI 판정 결과로 사용하지 않습니다.
 - 파일 작업은 `verify_change_rate.py`의 실제 계산값을 사용합니다.
-- 15,000자 이하는 길이만으로 heavy가 되지 않습니다. 15,000자 초과는 upstream 계약에 따라 heavy 신호이며, 그때도 `--chunk`가 body chunk를 2개 이상 만들 때만 청크 경로를 사용합니다.
-- 정밀 검토에 `delegate_task`를 쓸 수 있지만, 부모 agent가 최종 결과와 외부 부작용을 검증합니다.
+- 입력 길이는 route를 바꾸지 않습니다. Heavy/strict에서도 단일 child가 안정적으로 처리하기 어려운 장문이거나 사용자가 요청한 경우에만 `--chunk`를 쓰며, body chunk가 2개 이상일 때만 청크 경로를 사용합니다.
+- 부모 agent는 child의 완료 보고를 그대로 믿지 않고 모든 산출물을 다시 읽어 결정적 검증을 수행합니다.
+- strict에서 delegation을 사용할 수 없으면 자동 fallback하지 않습니다. 승인된 in-process 결과는 degraded non-strict로 구분하며, `hold_and_report`는 finalizer가 해결하지 못한 보존 의심에만 사용합니다.
 - 개인 문체 matching은 public skill에 넣지 않습니다.
 
 ## v2.2 포트 구성
@@ -35,6 +37,9 @@
 - `scripts/build_quick_rules.py`: taxonomy-to-quick-rules 생성·동기화 검사
 - `scripts/reassemble_chunks.py`: source hash와 문자 수 대사를 포함한 청크 재조립
 - `scripts/verify_change_rate.py`: 30% 경고·50% 중단의 결정적 게이트
+- `scripts/validate_stage_artifacts.py`: 역할별 필수 산출물과 구조·수치·인용·코드·각주 보존 검증
+- `scripts/update_execution_state.py`: 부모가 검증한 Hermes 역할 completion과 게이트 결과 기록
+- `references/runtime-agents/`: Hermes용 diagnostician·monolith·finalizer 역할 계약
 - `tests/`: metrics, route, 청킹, 골든 픽스처 회귀 테스트
 
 ## 공개 배포 경계

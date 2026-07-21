@@ -316,6 +316,24 @@ class ChunkCliRoundTripTests(unittest.TestCase):
     def test_roundtrip_academic(self) -> None:
         self._run_pipeline(ACADEMIC)
 
+    def test_switching_back_to_non_chunk_removes_stale_chunk_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            input_path = os.path.join(td, "01_input.txt")
+            with open(input_path, "w", encoding="utf-8") as f:
+                f.write(FOOTNOTED)
+            self.assertEqual(PREP.main(["--chunk", "--run-dir", td]), 0)
+            self.assertTrue(os.path.exists(os.path.join(td, "chunk_manifest.json")))
+
+            self.assertEqual(PREP.main(["--run-dir", td]), 0)
+            stale = [
+                name
+                for name in os.listdir(td)
+                if name == "chunk_manifest.json"
+                or name.startswith(("00_chunk_", "01_chunk_", "02_chunk_", "03_reassembl"))
+            ]
+            self.assertEqual(stale, [])
+            self.assertTrue(os.path.exists(os.path.join(td, "01_input_with_metrics.txt")))
+
     def test_reassemble_whitespace_restoration(self) -> None:
         """LLM이 앞뒤 공백을 흘려도 원문 청크의 공백이 복원된다."""
         text = LONG20K

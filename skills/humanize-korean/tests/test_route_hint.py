@@ -121,10 +121,16 @@ class RouteHintTests(unittest.TestCase):
         obj = _metrics_stub(risk_band="high", pivots=4, double_passive=3)
         self.assertEqual(PREP.compute_route_hint(obj)["route_hint"], "standard")
 
-    def test_very_long_text_is_heavy_regardless(self) -> None:
+    def test_very_long_text_does_not_change_low_risk_route(self) -> None:
         obj = _metrics_stub(risk_band="low", char_count=22000)
         out = PREP.compute_route_hint(obj)
-        self.assertEqual(out["route_hint"], "heavy")
+        self.assertEqual(out["route_hint"], "light")
+
+    def test_very_long_text_does_not_change_standard_route(self) -> None:
+        obj = _metrics_stub(
+            risk_band="high", char_count=22000, pivots=4, double_passive=3
+        )
+        self.assertEqual(PREP.compute_route_hint(obj)["route_hint"], "standard")
 
     def test_partial_metrics_degrade_to_standard(self) -> None:
         """키 누락·빈 입력에도 죽지 않고 보수적으로 standard."""

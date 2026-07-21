@@ -19,3 +19,5 @@ jobs:
       - run: pip install pytest
       - run: python -m pytest skills/humanize-korean/tests -q
       - run: python skills/humanize-korean/scripts/build_quick_rules.py --check
+      - run: python skills/humanize-korean/scripts/check_package_contents.py
+      - run: python -m compileall -q skills/humanize-korean

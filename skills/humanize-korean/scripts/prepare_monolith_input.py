@@ -113,8 +113,9 @@ def _resolve_run_dir(run_dir_arg: str | None, text_arg: str | None) -> Path:
 #              이미 잘 쓴 글. 단일 콜·최소 파이프라인 권장.
 #   standard — 그 외 (티가 섞여 있거나, 카운트형 0이어도 구조 지표로 risk high).
 #              진단 + 단일 윤문 권장. 실측 글(카운트 0·risk high)이 여기 온다.
-#   heavy    — risk high AND 카운트형 티 합 ≥ 8 (AI 슬롭 밀집),
-#              또는 초장문(> CHUNK_RECOMMEND_MIN_CHARS). 진단 + 청킹 권장.
+#   heavy    — risk high AND 카운트형 티 합 ≥ 8 (AI 슬롭 밀집).
+#
+# 입력 길이는 route를 바꾸지 않는다. 15,000자 기준은 아래 청킹 권고에만 쓴다.
 #
 # 카운트형 티 = v1.6 conclusion_pivot·safe_balance + v2.0 이중피동·에의해피동·
 # have/make직역·이중조사. 전부 정수 카운트라 baseline calibration 없이도 안정적.
@@ -122,9 +123,6 @@ def _resolve_run_dir(run_dir_arg: str | None, text_arg: str | None) -> Path:
 
 ROUTE_LIGHT_MAX_TELLS = 2
 ROUTE_HEAVY_MIN_TELLS = 8
-# 초장문 기준. 아래 청킹 섹션의 CHUNK_RECOMMEND_MIN_CHARS 가 이 값을 공유한다
-# — "heavy 판정"과 "청킹이 의미 있는 최소 분량"은 같은 실증에서 나온 한 기준.
-ROUTE_HEAVY_MIN_CHARS = 15000
 
 _ROUTE_TELL_KEYS_V16 = ("conclusion_pivot_count", "safe_balance_count")
 _ROUTE_TELL_KEYS_V2 = (
@@ -151,12 +149,7 @@ def compute_route_hint(metrics_obj: dict) -> dict:
     chars = int(metrics_obj.get("char_count") or 0)
     risk = metrics_obj.get("risk_band", "unknown")
 
-    if chars > ROUTE_HEAVY_MIN_CHARS:
-        hint = "heavy"
-        reason = (
-            f"{chars:,}자 초장문(>{ROUTE_HEAVY_MIN_CHARS:,}) — 진단 + 청킹 권장"
-        )
-    elif risk == "high" and tells >= ROUTE_HEAVY_MIN_TELLS:
+    if risk == "high" and tells >= ROUTE_HEAVY_MIN_TELLS:
         hint = "heavy"
         reason = (
             f"risk_band high + 카운트형 티 {tells}건 — AI 슬롭 밀집, "
@@ -363,7 +356,7 @@ MAX_CHUNK_CHARS = 9000
 # granularity 와 종결부호 없는 초장 런 경고 감도를 보존하기 위함. 폴백으로
 # 잘게 난 조각은 어차피 target 까지 그리디 재패킹되므로 콜 수는 늘지 않는다.
 SENT_SPLIT_TRIGGER_CHARS = 4000
-CHUNK_RECOMMEND_MIN_CHARS = ROUTE_HEAVY_MIN_CHARS
+CHUNK_RECOMMEND_MIN_CHARS = 15000
 
 HEADING_LINE_RE = re.compile(
     r"^(#{1,6}\s"
@@ -609,6 +602,23 @@ def _render_chunk_header(index: int, total: int, starts_with_heading: bool) -> s
     return "\n".join(lines)
 
 
+def _remove_stale_chunk_artifacts(run_dir: Path) -> list[str]:
+    """Remove artifacts that are valid only for a previous chunk layout."""
+    removed: list[str] = []
+    for pattern in (
+        "chunk_manifest.json",
+        "00_chunk_*",
+        "01_chunk_*",
+        "02_chunk_*_rewritten.txt",
+        "03_reassembled.md",
+        "03_reassembly_report.json",
+    ):
+        for stale in sorted(run_dir.glob(pattern)):
+            stale.unlink()
+            removed.append(stale.name)
+    return removed
+
+
 def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
     run_dir = _resolve_run_dir(args.run_dir, args.text)
     input_path = run_dir / "01_input.txt"
@@ -641,17 +651,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
 
     # 재청킹은 이전 청크 산출물(경계가 달라진 02_* 윤문 결과 포함)을 무효화한다.
     # 낡은 파일이 재조립에 잘못 섞이는 사고를 막기 위해 지우고 시작한다.
-    removed: list[str] = []
-    for pattern in (
-        "00_chunk_*",
-        "01_chunk_*",
-        "02_chunk_*_rewritten.txt",
-        "03_reassembled.md",
-        "03_reassembly_report.json",
-    ):
-        for stale in sorted(run_dir.glob(pattern)):
-            stale.unlink()
-            removed.append(stale.name)
+    removed = _remove_stale_chunk_artifacts(run_dir)
 
     total = len(spans)
     entries: list[dict] = []
@@ -800,6 +800,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"01_input.txt not found in {run_dir}; pass --text to create")
 
     text = input_path.read_text(encoding="utf-8")
+    removed = _remove_stale_chunk_artifacts(run_dir)
 
     metrics_obj: dict | None = None
     metrics_path = run_dir / "00_metrics.json"
@@ -847,6 +848,7 @@ def main(argv: list[str] | None = None) -> int:
         f"combined={combined_path}\n"
         f"risk_band={rb}  risk_score={rs}\n"
         f"route_hint={rh}\n"
+        f"stale_removed={len(removed)}\n"
         f"degraded={metrics_obj is None}"
     )
     return 0

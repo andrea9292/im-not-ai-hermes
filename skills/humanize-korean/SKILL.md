@@ -1,7 +1,7 @@
 ---
 name: humanize-korean
 description: Use when polishing Korean text that sounds AI-generated, translated, over-structured, post-edited, or mechanically formal. Detect and reduce Korean-specific AI tells, translationese, metric-backed post-editese signals, and template-like rhythm while preserving meaning, facts, genre, register, citations, numbers, and the author's own voice.
-version: 2.2.0-hermes.1
+version: 2.2.0-hermes.2
 author: epoko77-ai, Hermes port maintained by andrea9292
 license: MIT
 metadata:
@@ -20,7 +20,7 @@ metadata:
 
 The goal is not to erase the author. The goal is to reduce Korean-specific AI tells while preserving meaning, factual claims, genre, register, field vocabulary, citations, numbers, and authorial voice. Formal Korean is not an AI tell by itself. Humanized text should not become casual, literary, opinionated, or generically smooth unless the user explicitly asks for that style.
 
-This Hermes port intentionally avoids Claude Code-only mechanisms from the original repository. Do not assume `.claude/agents`, `Agent`, `TeamCreate`, `TeamDelete`, model routing such as `model: opus`, or slash commands such as `/humanize` and `/humanize-redo` are available. In Hermes, the main agent performs the route-aware workflow directly using this skill and its reference files. For heavy review, use normal Hermes reasoning, file tools, deterministic gates, and optional `delegate_task` subtasks with self-contained prompts.
+This Hermes port does not register or invoke Claude Code-only `.claude/agents`, `Agent`, `TeamCreate`, `TeamDelete`, `model: opus`, or slash commands such as `/humanize` and `/humanize-redo`. It preserves the upstream role separation with Hermes-native `delegate_task` calls and packaged runtime-role prompts. The parent Hermes agent orchestrates the run, executes deterministic scripts, verifies every child artifact, and alone decides whether a result may be adopted.
 
 ## Upstream and Version Notes
 
@@ -103,10 +103,16 @@ Load the smallest useful reference first.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/verify_change_rate.py`: Deterministic post-edit gate; below 30% passes, 30–50% warns, and 50% or more aborts adoption.
 - `scripts/reassemble_chunks.py`: Lossless chunk reassembler with source-hash and size-ratio checks.
+- `scripts/validate_stage_artifacts.py`: Validates diagnosis, rewrite, and strict/finalize artifacts plus deterministic fidelity invariants.
+- `scripts/update_execution_state.py`: Records parent-verified Hermes delegation completions and final gate provenance for strict runs.
+- `scripts/check_package_contents.py`: Fails release-candidate validation if a required runtime role, script, or regression test is missing.
+- `references/runtime-agents/diagnostician.md`: Hermes `delegate_task` role contract for dominant-pattern diagnosis.
+- `references/runtime-agents/monolith.md`: Hermes `delegate_task` role contract for targeted rewriting and self-checking.
+- `references/runtime-agents/finalizer.md`: Hermes `delegate_task` role contract for direct original-versus-rewrite review and local correction.
 - `references/web-service-spec.md`: Optional product/web-service expansion note. Do not load for ordinary text polishing.
 - `references/hermes-port-notes.md`: Porting notes and public-boundary reminders.
 
-In Hermes, call `skill_view(name='humanize-korean', file_path='references/quick-rules.md')` when the current task requires concrete rule lookup and the reference is available in the installed skill. If linked files are not available through the skill loader, use the local file path when working inside this repository.
+Resolve the absolute installed skill directory from the skill activation/loader output before running a helper. `SKILL_ROOT` below is notation, not an automatically exported environment variable. In a shell, assign it explicitly, for example `SKILL_ROOT="<absolute-installed-skill-directory>"`. Call `skill_view(name='humanize-korean', file_path='references/quick-rules.md')` when a child cannot access the same filesystem path or when concrete rule lookup is cheaper through progressive disclosure. If linked files are unavailable through the skill loader, use the local path inside this repository.
 
 ## Relationship to `humanizer`
 
@@ -116,18 +122,18 @@ Do not stack both skills mechanically. If both are relevant, let this skill gove
 
 ## Route-Aware Workflow
 
-Use one of three paths. User instructions override metrics: `정밀`, `엄격`, or `strict` forces `heavy`; `가볍게` or `빠르게만` forces `light`. Length does not force `heavy` at or below 15,000 characters; text over 15,000 characters is an upstream-defined `heavy` signal. Even then, chunk only when the shim actually creates two or more body chunks.
+Use one of three paths. User instructions override metrics: `정밀`, `엄격`, or `strict` forces `heavy`; `가볍게` or `빠르게만` forces `light`. Otherwise follow the shim's `route_hint`. Input length alone never changes the route in upstream v2.2. `heavy` may ask the shim for chunks when a single reliable rewrite call would exceed the practical context boundary; explicit `strict` forces the fresh-context three-role path, not chunking.
 
 | Route | Default work | Use when |
 |---|---|---|
-| `light` | one direct conservative rewrite | well-written text with few lexical or passive-form tells |
-| `standard` | diagnosis, then one targeted rewrite | ordinary AI draft or mixed signals |
-| `heavy` | diagnosis, rewrite, deterministic gate, and fidelity/final review | dense AI patterns, more than 15,000 characters, explicit strict request, or evidence-sensitive publication work |
+| `light` | one conservative monolith child | well-written text with few lexical or passive-form tells |
+| `standard` | diagnostician child, then monolith child | ordinary AI draft or mixed signals |
+| `heavy` | diagnostician child, monolith child or chunk batch, deterministic gate, then finalizer child | dense AI patterns, explicit strict request, or evidence-sensitive publication work |
 
 ### 1. Identify the boundary
 
 - Determine inline text versus file workflow, genre, register, formatting constraints, and requested strength.
-- Preserve headings, lists, tables, footnotes, links, frontmatter, and direct quotations unless the user explicitly asks to restructure them.
+- Preserve meaning-bearing structure, headings as independent lines, tables, footnotes, links, frontmatter, and direct quotations. Do not flatten useful lists or checklists. A mechanical list may become prose only when an upstream C-9/J-3 rule clearly applies, the genre supports it, and no item or ordering information is lost. Explicit user preservation constraints override that option.
 - Do not infer a private house style from unrelated local files. A separate user-provided style guide may be layered on top.
 
 ### 2. Load the smallest rule set
@@ -142,6 +148,7 @@ Use one of three paths. User instructions override metrics: `정밀`, `엄격`, 
 For a file workflow or repeatable diagnostic, run:
 
 ```bash
+SKILL_ROOT="<absolute-installed-skill-directory>"
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
   --run-dir <run-dir> --genre <genre>
 ```
@@ -152,37 +159,82 @@ paths resolve against the current working directory, never the installed skill.
 
 Read `route_hint` from `00_metrics.json`. If metrics fail or `route_hint` is absent, use `standard`. Treat the route as an advisory, not a detector verdict.
 
-For inline or very short work where creating files adds no value, choose conservatively from the text itself: use `light` unless clear repeated S1/S2 patterns justify `standard`. Do not claim a computed `route_hint` when the script was not run.
+Inline text follows the same upstream Phase 1. Materialize it as `01_input.txt` in a run directory (or use the shim's `--text` entry point), run the shim, and then follow `route_hint`. The user may still request the revised text inline at delivery time; that does not remove the file-backed runtime contract required by delegated children.
 
-### 4. Execute the chosen route
+After selecting the route, show one compact status line before dispatch:
+
+```text
+humanize-korean 2.2.0-hermes.2 — 경로: {light|standard|heavy} ({route_hint|사용자 지정}) / 역할: {monolith | diagnostician→monolith | diagnostician→monolith[N]→finalizer} / run_id: {run_id}
+```
+
+### 4. Hermes-native delegation contract
+
+The role call count is part of the route contract, not an optional optimization. When `delegate_task` is available, use leaf children and the packaged role prompts:
+
+- `light`: monolith ×1
+- `standard`: diagnostician ×1, then monolith ×1
+- `heavy` / explicit `strict`: diagnostician ×1, monolith ×1 or chunk batch ×N, then finalizer ×1
+
+Do not replace these fresh-context roles with one parent-agent rewrite merely because the parent can perform the prose edit. The external diagnosis and finalizer perspectives are the quality mechanism inherited from upstream.
+
+Each child starts without conversation history. Its `goal` and `context` must therefore include:
+
+- the absolute path of the appropriate `references/runtime-agents/*.md` contract; if the child cannot access it, tell the child to load the same file with `skill_view`
+- all absolute input and output paths; rule/taxonomy references may use `skill_view` only when the installed filesystem path is unavailable
+- route, mode, genre, strength, `run_id`, and user preservation constraints
+- an instruction to read the role contract first, write only the declared output, and return a compact artifact summary
+- an instruction not to ask the user, modify the source file, call another agent, or infer missing context
+
+Top-level Hermes delegation is asynchronous. Dispatch one dependent stage, continue unrelated work if useful, and wait for its completion event to re-enter the session before starting the next stage. For a chunk fan-out, send one `delegate_task(tasks=[...])` batch and do not reassemble until its consolidated completion event reports every task. Do not poll or claim completion early.
+
+Child summaries are self-reports. After every completion, the parent must read or stat the declared artifact and run the applicable stage validator. A claimed write that cannot be read back is a failed stage.
+
+For `heavy`/strict, initialize `00_execution.json` after route selection with `scripts/update_execution_state.py init`. After the parent has read and validated a role output, call `record` with the actual Hermes delegation or batch ID and that output path. Record every chunk task separately, using its shared batch ID plus task index. The change-rate gate writes `change_rate`; after the finalizer verdict, call `finish --status completed` or `finish --status hold_and_report`. Never record a child merely because it was dispatched.
+
+**Delegation fallback**
+
+- If `delegate_task` is unavailable, `light` may run in the parent with `degraded_in_process_fallback: true` in the summary.
+- `standard` may use an in-process diagnosis pass followed by a separate rewrite pass only after disclosing the degraded path.
+- `heavy` / explicit `strict` must never silently fall back. On an interrupted or unknown outcome, inspect and validate the declared artifact before retrying; if no valid artifact exists, use an attempt-specific output path so two attempts cannot race on one file. If delegation remains unavailable, stop as `delegation_unavailable`. A user-approved in-process result is a separately labelled degraded non-strict run, never upstream-equivalent strict and never `hold_and_report` (which is reserved for a finalizer verdict).
+
+### 5. Execute the selected route
 
 **Light**
 
-1. Rewrite directly with `quick-rules.md`, using `보수` strength.
-2. Keep changes local. If little needs changing, say so rather than manufacturing edits.
-3. Perform the preservation self-check before returning.
+1. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, and `strength=보수`.
+2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants.
+3. If little needs changing, report that rather than manufacturing edits.
 
 **Standard**
 
-1. Diagnose the 3–6 dominant patterns with taxonomy IDs, genre/register, and preservation constraints.
-2. Rewrite once, targeting only those dominant patterns. Do not enumerate every possible span.
-3. Perform the preservation self-check. Use the deterministic change-rate gate for file output.
+1. Dispatch one leaf child using `references/runtime-agents/diagnostician.md` to write `02_diagnosis.md`.
+2. Read back and validate the diagnosis, then rerun the shim with `--diagnosis`.
+3. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, targeting the diagnosed 3–6 patterns.
+4. Read back and validate `final.md`, then apply the deterministic change-rate gate.
+5. Run a finalizer only under the upstream escalation table: gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls.
 
-**Heavy**
+**Heavy / strict**
 
-1. Diagnose dominant patterns and explicit preservation constraints.
-2. Rewrite the whole document once unless the shim actually creates two or more body chunks.
-3. If `--chunk` is justified, use manifest `input_file` and `rewritten_file` names exactly, then run `scripts/reassemble_chunks.py`. Never invent chunk filenames.
-4. Run `scripts/verify_change_rate.py` and compare original versus rewrite for facts, names, numbers, dates, quotes, citations, URLs, headings, footnotes, and register.
-5. Correct only the suspicious passages. Do not run an unrestricted whole-document rewrite as the final review.
+1. Dispatch and validate the diagnostician stage exactly as in `standard`.
+2. Rerun the shim with `--diagnosis`. Add `--chunk` only when the document exceeds a reliable single-child context boundary or the user explicitly requests chunking. Treat the shim's small-input warning as a reason to keep one monolith call. Route selection and chunk selection are separate decisions.
+3. Without a chunk manifest, dispatch one monolith child with `mode=document`, `input_path=01_input_with_metrics.txt`, and `output_path=final.md`. With a deliberate chunk manifest, if `body_chunk_count` is one, use `mode=document` and the manifest-declared `input_file`; if it is two or more, create one `delegate_task(tasks=[...])` batch whose leaf tasks each use `mode=chunk` and distinct manifest-declared `input_file` and `rewritten_file` paths.
+4. Run at most four chunk children concurrently for upstream parity and respect any lower Hermes runtime cap. Split larger manifests into sequential batches. Children must never write the same file.
+5. After the consolidated batch completion, verify every rewritten chunk. Then run `scripts/reassemble_chunks.py --run-dir <run-dir> --strict --output final.md`. For a single-document path, validate `final.md` directly.
+6. Run `scripts/verify_change_rate.py`. Exit 1 triggers finalizer review. Exit 2 forbids adoption: restore the last safe version and rerun monolith conservatively once; a second exit 2 stops as `hold_and_report`. Exit 3 must be fixed and rerun, never skipped.
+7. Copy the current `final.md` to `final_pre_finalize.md` before finalization.
+8. Dispatch one leaf child using `references/runtime-agents/finalizer.md`. It must directly compare `01_input.txt`, `final.md`, and `02_diagnosis.md`, perform only local corrections, and write `09_finalize.json`.
+9. Read back `final.md` and `09_finalize.json`, rerun the change-rate gate, stamp the parent-measured value into the summary/provenance, then run `scripts/validate_stage_artifacts.py --stage all --strict`. `hold_and_report` is a safe human-review stop, not a successfully adopted final result.
 
-Optional `delegate_task` review is allowed for heavy work, but the parent Hermes agent owns the final text and must verify any returned file or claim.
+The parent must not substitute a bulk string-replacement script for the monolith role. Mechanical replacement is especially unsafe for `할 수 있다`, passive forms, formal nouns, and connective endings.
 
-### 5. Apply the deterministic gate for file output
+### 6. Apply the deterministic gate for file output
 
 ```bash
-python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
+python "$SKILL_ROOT/scripts/verify_change_rate.py" \
+  --before <original> --after <final> --stamp-summary
 ```
+
+For strict/heavy, also pass `--execution-state <run-dir>/00_execution.json` so the same parent-measured gate result is recorded in provenance.
 
 - exit `0`, below 30%: proceed
 - exit `1`, 30–50%: warn about possible over-editing and perform fidelity review
@@ -191,20 +243,21 @@ python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <
 
 `--ignore-markup` may be used only as a secondary measurement when heading/list conversion inflates the rate. If it changes the interpretation, report both measurements.
 
-### 6. Return the result
+### 7. Return the result
 
 - Inline work: revised text plus a compact change summary.
 - File work: output path, route, deterministic change rate, changed areas, and any unresolved review issue.
 - Do not silently overwrite an important source file.
 
-## Optional Metrics Workflow
+## Standalone Metrics Workflow
 
-Metrics are optional. Use them when the text is long, when the user asks for a diagnostic report, or when a file workflow benefits from repeatable evidence.
+The route shim and `00_metrics.json`/`00_metrics.error` are part of upstream Phase 1 for every delegated route. The additional `metrics_v2.py` command below is optional and is useful when the user asks for a separate diagnostic report.
 
 Run from the user's working directory with `SKILL_ROOT` set to the absolute
 installed package path:
 
 ```bash
+SKILL_ROOT="<absolute-installed-skill-directory>"
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
   --text "분석할 한국어 원문" \
   --genre essay
@@ -236,18 +289,26 @@ Run these from the user's working directory. Relative input/output paths resolve
 against that directory; `SKILL_ROOT` points to the installed package.
 
 ```bash
+SKILL_ROOT="<absolute-installed-skill-directory>"
 # Confirm the generated quick rules match taxonomy metadata.
 python "$SKILL_ROOT/scripts/build_quick_rules.py" --check
 
 # Prepare a normal route-aware input bundle.
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay
 
-# Heavy-only: create lossless chunks when the text truly exceeds the threshold.
-python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay --chunk
-python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict
+# Heavy-only and only when a single reliable child would exceed the practical
+# context boundary: ask the shim for a lossless chunk layout.
+python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay --diagnosis <run-dir>/02_diagnosis.md --chunk
+python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict --output final.md
 
 # Measure the adopted rewrite rather than trusting an LLM estimate.
-python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final>
+python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final> --stamp-summary
+
+# Validate stage contracts and deterministic fidelity invariants.
+python "$SKILL_ROOT/scripts/validate_stage_artifacts.py" \
+  --run-dir <run-dir> --stage all --strict
+
+# Add --preserve-lists only when the user explicitly required list/checklist preservation.
 ```
 
 The helper scripts are standard-library only. Metrics and route hints support editorial attention; they do not establish whether a text was written by AI.
@@ -261,11 +322,19 @@ When writing files, prefer this pattern:
 3. For file workflows, append a hidden HTML summary block to `final.md` instead of requiring a second `summary.md` file:
 
 ```html
-<!-- HUMANIZE-SUMMARY
+<!-- HUMANIZE-SUMMARY v2.2
+run_id: ...
 metrics:
-  change_rate: ...
+  char_in: ...
+  char_out: ...
+  change_rate_claim: ...
+  change_rate_actual: ...
+  gate_exit: 0|1|2
   grade: A|B|C|D
-  categories: [A-7, C-11, D-1]
+categories:
+  - id: C-11
+    before: ...
+    after: ...
 self_check:
   preserved_names_numbers_quotes: pass
   genre_register: pass
@@ -276,6 +345,18 @@ notes:
 ```
 
 The hidden block keeps rendered Markdown clean while preserving machine-readable review metadata. If the user wants a separate summary file, create one explicitly.
+
+Strict/heavy file work is complete only when these artifacts exist and validate:
+
+- `01_input.txt`
+- `00_metrics.json` or `00_metrics.error`
+- `00_execution.json` (Hermes parent-verified delegation provenance)
+- `02_diagnosis.md`
+- `final_pre_finalize.md`
+- `final.md`
+- `09_finalize.json`
+
+Chunked runs additionally require `chunk_manifest.json`, every manifest-declared rewritten body chunk, and a successfully verified reassembly. Missing `02_diagnosis.md` or `09_finalize.json` means the run is not upstream-equivalent strict, regardless of the final prose quality.
 
 ## Editing Strength
 
@@ -388,8 +469,14 @@ For file edits, include:
 9. Confusing public skill behavior with private voice matching.
    - This skill is general-purpose. Specific writer style belongs in a separate skill or style guide.
 
-10. Porting Claude Code mechanics into Hermes.
-   - Do not mention or depend on `Agent`, `TeamCreate`, `TeamDelete`, `/humanize`, or `.claude/agents` in the executable Hermes workflow.
+10. Copying Claude Code runtime mechanics instead of translating their intent.
+   - Do not depend on `Agent`, `TeamCreate`, `TeamDelete`, `/humanize`, or `.claude/agents`. Preserve their role separation with Hermes `delegate_task`, packaged role contracts, isolated outputs, and parent-side verification.
+
+11. Treating delegation as cosmetic.
+   - A single parent pass followed by a self-review is not the strict three-stage path. Diagnosis and finalization must run in fresh child contexts when delegation is available.
+
+12. Trusting a child summary without reading the artifact.
+   - Verify each declared file and run the stage validator. Subagent completion text is not proof of a successful write.
 
 ## Verification Checklist
 
@@ -403,6 +490,9 @@ Before finalizing, verify:
 - [ ] Metrics, if used, are treated as supporting evidence only.
 - [ ] The text does not become over-polished, generic, or artificially literary.
 - [ ] Any uncertain edit is explained or left for human review.
+- [ ] The selected route used its required runtime roles, or a degraded fallback is explicitly recorded.
+- [ ] Every child artifact was read back and validated by the parent.
+- [ ] Heavy/strict produced a parseable `09_finalize.json` with an accepted verdict.
 
 ## Installation Notes
 
