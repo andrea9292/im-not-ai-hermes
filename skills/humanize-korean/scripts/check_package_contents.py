@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when a humanize-korean release candidate omits runtime files."""
+"""Validate source or installed humanize-korean package contents."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 
-REQUIRED = (
+RUNTIME_REQUIRED = (
     "SKILL.md",
     "references/quick-rules.md",
     "references/diagnosis-rules.md",
@@ -20,18 +20,24 @@ REQUIRED = (
     "references/runtime-agents/finalizer.md",
     "scripts/prepare_monolith_input.py",
     "scripts/build_diagnosis_rules.py",
+    "scripts/golden_checks.py",
     "scripts/verify_gates.py",
     "scripts/verify_change_rate.py",
     "scripts/reassemble_chunks.py",
     "scripts/validate_stage_artifacts.py",
     "scripts/update_execution_state.py",
     "scripts/check_package_contents.py",
+)
+
+TEST_REQUIRED = (
     "tests/test_validate_stage_artifacts.py",
     "tests/test_diagnosis_rules_build.py",
     "tests/test_verify_gates.py",
     "tests/test_runtime_provenance.py",
     "tests/test_stage_validator_regressions.py",
 )
+
+SOURCE_REQUIRED = RUNTIME_REQUIRED + TEST_REQUIRED
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,10 +49,16 @@ def main(argv: list[str] | None = None) -> int:
         help="candidate skills/humanize-korean directory",
     )
     parser.add_argument("--expected-version", default="2.3.0-hermes.1")
+    parser.add_argument(
+        "--installed",
+        action="store_true",
+        help="check only files required in a Hermes-installed skill package",
+    )
     args = parser.parse_args(argv)
     root = args.skill_root.resolve()
+    required = RUNTIME_REQUIRED if args.installed else SOURCE_REQUIRED
 
-    missing = [relative for relative in REQUIRED if not (root / relative).is_file()]
+    missing = [relative for relative in required if not (root / relative).is_file()]
     if missing:
         for relative in missing:
             print(f"missing: {relative}", file=sys.stderr)
@@ -62,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(f"package_ok version={actual} required_files={len(REQUIRED)} root={root}")
+    print(f"package_ok version={actual} required_files={len(required)} root={root}")
     return 0
 
 

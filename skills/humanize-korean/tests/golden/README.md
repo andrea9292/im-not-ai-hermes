@@ -7,8 +7,9 @@ taxonomy·플레이북·프롬프트를 고칠 때 **윤문 품질이 후퇴하�
 ## 구조
 
 ```
+scripts/
+└── golden_checks.py           # 설치되는 결정적 채점기 (stdlib only)
 tests/golden/
-├── checks.py                  # 결정적 채점기 (stdlib only)
 ├── fixtures/
 │   └── <NN_실패모드-이름>/
 │       ├── input.txt              # 윤문 전 원문
@@ -27,7 +28,7 @@ pytest tests/test_golden.py
 python3 -m unittest tests.test_golden
 
 # 채점기 단독 — 실제 윤문 결과를 게이트에 통과시킬 때
-python3 tests/golden/checks.py fixtures/01_register_downgrade/input.txt <윤문결과.txt>
+python3 scripts/golden_checks.py tests/golden/fixtures/01_register_downgrade/input.txt <윤문결과.txt>
 ```
 
 CI에서는 LLM을 부를 수 없으므로 자동 테스트는 **채점기 자체**를 양방향으로 검증합니다
@@ -66,10 +67,10 @@ LLM 출력은 비결정적이라 "정확히 이 문자열"을 기대하면 안 �
 3. `bad_output.txt` — 그 실패가 실제로 일어난 모습. 애매하게 만들지 마세요.
 4. `good_output.txt` — 철칙(내용·인용·구조·register 불변)을 지킨 정상 윤문.
 5. `expected_failures.json` — `{"description": "...", "bad_must_fail": [코드들]}`.
-   코드 목록은 `checks.py` 상단 docstring 참조.
+   코드 목록은 `scripts/golden_checks.py` 상단 docstring 참조.
 6. `python3 -m unittest tests.test_golden` 이 통과하는지 확인합니다. 새 실패
-   모드가 기존 체크로 안 잡히면 `checks.py`에 방향성 체크를 추가하되, 반드시
-   무변경(identity)·정상 윤문이 PASS함을 함께 증명하세요.
+   모드가 기존 체크로 안 잡히면 `scripts/golden_checks.py`에 방향성 체크를 추가하되,
+   반드시 무변경(identity)·정상 윤문이 PASS함을 함께 증명하세요.
 
 ## 원천
 

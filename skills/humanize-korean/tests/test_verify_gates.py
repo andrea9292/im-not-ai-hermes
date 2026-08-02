@@ -11,6 +11,9 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+from pathlib import Path
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -219,6 +222,73 @@ class MainExitCodeTests(unittest.TestCase):
         self.assertIn("antithesis", report)
         self.assertIn("sentence_touch", report)
         self.assertIn("numbers_dropped", report)
+
+
+class InstalledCandidateSmokeTests(unittest.TestCase):
+    def test_candidate_without_tests_runs_gate(self) -> None:
+        """Hermes 설치 경계처럼 tests/가 없어도 대표 게이트가 실행돼야 한다."""
+        source_root = Path(PROJECT_ROOT)
+        with tempfile.TemporaryDirectory() as d:
+            temp_root = Path(d)
+            candidate = temp_root / "humanize-korean"
+            candidate.mkdir()
+            shutil.copy2(source_root / "SKILL.md", candidate / "SKILL.md")
+            ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
+            shutil.copytree(
+                source_root / "references", candidate / "references", ignore=ignore
+            )
+            shutil.copytree(source_root / "scripts", candidate / "scripts", ignore=ignore)
+
+            self.assertFalse((candidate / "tests").exists())
+            skill = (candidate / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn("version: 2.3.0-hermes.1", skill)
+            for role in ("diagnostician", "monolith", "finalizer"):
+                self.assertTrue(
+                    (candidate / "references" / "runtime-agents" / f"{role}.md").is_file()
+                )
+            self.assertTrue((candidate / "scripts" / "golden_checks.py").is_file())
+
+            package_check = subprocess.run(
+                [
+                    sys.executable,
+                    str(candidate / "scripts" / "check_package_contents.py"),
+                    "--skill-root",
+                    str(candidate),
+                    "--expected-version",
+                    "2.3.0-hermes.1",
+                    "--installed",
+                ],
+                cwd=temp_root,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                package_check.returncode,
+                0,
+                package_check.stdout + package_check.stderr,
+            )
+
+            work = temp_root / "work"
+            work.mkdir()
+            before = work / "before.txt"
+            after = work / "after.md"
+            before.write_text(_PLAIN, encoding="utf-8")
+            after.write_text(_PLAIN, encoding="utf-8")
+            gate = subprocess.run(
+                [
+                    sys.executable,
+                    str(candidate / "scripts" / "verify_gates.py"),
+                    "--before",
+                    str(before),
+                    "--after",
+                    str(after),
+                ],
+                cwd=work,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
+            self.assertIn("[P3 golden] PASS", gate.stdout)
 
 
 if __name__ == "__main__":

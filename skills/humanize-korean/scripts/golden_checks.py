@@ -8,13 +8,13 @@ documented failure modes fail.
 
 stdlib only. Usage as a library:
 
-    from checks import run_checks
+    from golden_checks import run_checks
     failures = run_checks(original_text, rewritten_text)
     # empty list == PASS
 
 or from the CLI:
 
-    python3 checks.py input.txt output.txt
+    python3 scripts/golden_checks.py input.txt output.txt
 
 Failure codes (stable API — tests and fixtures reference these):
     empty_output       output is blank
@@ -396,7 +396,10 @@ def run_checks(original: str, output: str) -> list[Failure]:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 3:
-        print("usage: python3 checks.py <original.txt> <rewritten.txt>", file=sys.stderr)
+        print(
+            "usage: python3 scripts/golden_checks.py <original.txt> <rewritten.txt>",
+            file=sys.stderr,
+        )
         return 2
     with open(argv[1], encoding="utf-8") as f:
         original = f.read()

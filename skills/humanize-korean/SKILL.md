@@ -106,12 +106,13 @@ Load the smallest useful reference first.
 - `scripts/prepare_monolith_input.py`: File-workflow helper that computes metrics, emits `route_hint`, and optionally creates lossless chunks.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/build_diagnosis_rules.py`: Rebuilds the slim diagnostician index from taxonomy metadata; `--check` verifies that it is current.
+- `scripts/golden_checks.py`: Installed stdlib-only scorer for deterministic register, structure, quotation, footnote, and number-preservation gates.
 - `scripts/verify_gates.py`: Authoritative v2.3 post-edit gate. It combines character change rate, S1 target reduction, C-8 extinction, and golden/number-injection checks and records the unified result in Hermes summary/provenance.
 - `scripts/verify_change_rate.py`: Backward-compatible standalone character-rate gate and shared Hermes summary/provenance writer. Do not use it as the sole adoption gate for new v2.3 runs.
 - `scripts/reassemble_chunks.py`: Lossless chunk reassembler with source-hash and size-ratio checks.
 - `scripts/validate_stage_artifacts.py`: Validates diagnosis, rewrite, and strict/finalize artifacts plus deterministic surface-preservation invariants. Semantic attribution, scope, and judgment strength remain the fresh-context finalizer's responsibility.
 - `scripts/update_execution_state.py`: Records parent-verified Hermes delegation completions and final gate provenance for strict runs.
-- `scripts/check_package_contents.py`: Fails release-candidate validation if a required runtime role, script, or regression test is missing.
+- `scripts/check_package_contents.py`: Fails source release-candidate validation if a required runtime role, script, or regression test is missing; `--installed` validates the runtime-only Hermes package boundary.
 - `references/runtime-agents/diagnostician.md`: Hermes `delegate_task` role contract for dominant-pattern diagnosis.
 - `references/runtime-agents/monolith.md`: Hermes `delegate_task` role contract for targeted rewriting and self-checking.
 - `references/runtime-agents/finalizer.md`: Hermes `delegate_task` role contract for direct original-versus-rewrite review and local correction.

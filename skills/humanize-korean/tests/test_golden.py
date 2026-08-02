@@ -10,7 +10,7 @@ suite validates the deterministic scorer itself, both directions:
                 failure codes declared in expected_failures.json
 
 To gate a real pipeline run, feed the actual rewrite of input.txt through
-tests/golden/checks.py (see tests/golden/README.md).
+scripts/golden_checks.py (see tests/golden/README.md).
 """
 
 from __future__ import annotations
@@ -21,11 +21,13 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 GOLDEN_DIR = os.path.join(HERE, "golden")
 FIXTURES_DIR = os.path.join(GOLDEN_DIR, "fixtures")
-sys.path.insert(0, GOLDEN_DIR)
+SCRIPTS_DIR = os.path.join(PROJECT_ROOT, "scripts")
+sys.path.insert(0, SCRIPTS_DIR)
 
-import checks  # noqa: E402
+import golden_checks as checks  # pyright: ignore[reportMissingImports]  # noqa: E402
 
 
 def _read(path: str) -> str:
