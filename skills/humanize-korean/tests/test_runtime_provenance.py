@@ -28,6 +28,7 @@ def _load(name: str, filename: str):
 
 STATE = _load("update_execution_state_test", "update_execution_state.py")
 RATE = _load("verify_change_rate_test", "verify_change_rate.py")
+GATE = _load("verify_gates_test", "verify_gates.py")
 
 SUMMARY = """윤문한 본문이다.
 
@@ -215,6 +216,71 @@ class ChangeRateStampTests(unittest.TestCase):
             after.write_text("같은 본문\n<!-- HUMANIZE-SUMMARY", encoding="utf-8")
             self.assertEqual(
                 RATE.main(
+                    [
+                        "--before",
+                        str(before),
+                        "--after",
+                        str(after),
+                        "--stamp-summary",
+                    ]
+                ),
+                3,
+            )
+
+
+class StructuralGateStampTests(unittest.TestCase):
+    def test_structural_warning_stamps_unified_gate_exit(self) -> None:
+        before_text = (
+            "문제는 속도가 아니라 방향이다. 핵심은 기술이 아니라 태도다. "
+            "관건은 자본이 아니라 신뢰다. 목표는 규모가 아니라 지속이다. "
+            "본질은 형식이 아니라 내용이다. 답은 통제가 아니라 자율이다."
+        )
+        after_body = (
+            "문제는 속도보다 방향이다. 핵심은 기술보다 태도다. "
+            "관건은 자본보다 신뢰다. 목표는 규모보다 지속이다. "
+            "본질은 형식보다 내용이다. 답은 통제보다 자율이다."
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            before = run / "01_input.txt"
+            after = run / "final.md"
+            execution = run / "00_execution.json"
+            before.write_text(before_text, encoding="utf-8")
+            after.write_text(
+                after_body + SUMMARY[SUMMARY.index("\n\n<!-- HUMANIZE-SUMMARY"):],
+                encoding="utf-8",
+            )
+            execution.write_text('{"change_rate": null}\n', encoding="utf-8")
+
+            code = GATE.main(
+                [
+                    "--before",
+                    str(before),
+                    "--after",
+                    str(after),
+                    "--stamp-summary",
+                    "--execution-state",
+                    str(execution),
+                ]
+            )
+
+            self.assertEqual(code, 1)
+            stamped = after.read_text(encoding="utf-8")
+            self.assertIn("gate_exit: 1", stamped)
+            self.assertNotIn("change_rate_actual: pending_parent_gate", stamped)
+            payload = json.loads(execution.read_text(encoding="utf-8"))
+            self.assertEqual(payload["change_rate"]["exit_code"], 1)
+            self.assertLess(payload["change_rate"]["percent"], 30.0)
+
+    def test_requested_structural_stamp_requires_complete_tail_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp)
+            before = run / "before.txt"
+            after = run / "after.md"
+            before.write_text("같은 본문", encoding="utf-8")
+            after.write_text("같은 본문\n<!-- HUMANIZE-SUMMARY", encoding="utf-8")
+            self.assertEqual(
+                GATE.main(
                     [
                         "--before",
                         str(before),
