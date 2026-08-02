@@ -19,9 +19,9 @@
 | Hermes skill name | `humanize-korean` |
 | Repository | `andrea9292/im-not-ai-hermes` |
 | Package path | `skills/humanize-korean/` |
-| Hermes port version | `2.2.0-hermes.2` |
+| Hermes port version | `2.3.0-hermes.1` |
 | Original project | `epoko77-ai/im-not-ai` |
-| Original baseline | v2.2.0, upstream commit `3120cb81`까지 반영 |
+| Original baseline | v2.3.0, upstream commit `82137e85`까지 반영 |
 | License | MIT |
 | Distribution | Hermes tap-friendly skill source |
 
@@ -30,15 +30,15 @@
 이 포트의 버전은 원본 버전과 Hermes 포트 패치 번호를 함께 표기합니다.
 
 ```text
-2.2.0-hermes.2
+2.3.0-hermes.1
 ```
 
 이 버전 표기의 의미는 다음과 같습니다.
 
-- `2.2.0`: 원본 `epoko77-ai/im-not-ai`의 v2.2.0 taxonomy, route-aware workflow, 결정적 검증 도구를 기준으로 합니다.
-- `hermes.2`: v2.2.0의 진단→윤문→finalize 역할 분리를 Hermes `delegate_task`와 부모 검증 방식으로 복원한 두 번째 포트 패치입니다.
+- `2.3.0`: 원본 `epoko77-ai/im-not-ai`의 v2.3.0 taxonomy, route-aware workflow, 구조 수렴 게이트, 진단 슬림 인덱스를 기준으로 합니다.
+- `hermes.1`: v2.3.0의 새 검증·진단 계약을 기존 Hermes `delegate_task`와 부모 검증 방식에 선택적으로 이식한 첫 번째 포트 패치입니다.
 
-원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.3.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
+원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.4.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
 
 ## 왜 한국어 특화인가
 
@@ -69,6 +69,7 @@
 ```text
 skills/humanize-korean/SKILL.md                         # Hermes 스킬 진입점
 skills/humanize-korean/references/quick-rules.md        # 빠른 윤문용 핵심 규칙
+skills/humanize-korean/references/diagnosis-rules.md    # 진단 전용 슬림 인덱스
 skills/humanize-korean/references/ai-tell-taxonomy.md   # 전체 분류 체계
 skills/humanize-korean/references/rewriting-playbook.md # 카테고리별 윤문 처방
 skills/humanize-korean/references/scholarship.md        # 번역투·후편집투 관련 근거 메모
@@ -77,7 +78,9 @@ skills/humanize-korean/references/metrics.py            # v1.6 계열 정량 지
 skills/humanize-korean/references/metrics_v2.py         # v2.0 후편집투·간섭 지표 보조 도구
 skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·청킹 준비
 skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
-skills/humanize-korean/scripts/verify_change_rate.py    # 결정적 변경률 게이트
+skills/humanize-korean/scripts/build_diagnosis_rules.py # taxonomy 기반 진단 인덱스 생성
+skills/humanize-korean/scripts/verify_gates.py          # 4축 구조 수렴 게이트
+skills/humanize-korean/scripts/verify_change_rate.py    # 하위 호환 문자율 게이트
 skills/humanize-korean/scripts/reassemble_chunks.py     # 손실 없는 청크 재조립
 skills/humanize-korean/scripts/validate_stage_artifacts.py # 단계 산출물·표면 보존 검증
 skills/humanize-korean/scripts/update_execution_state.py # Hermes 역할 완료 provenance
@@ -153,7 +156,7 @@ humanize-korean으로 이 글의 번역투와 기계적으로 느껴지는 표�
 
 ## 세 가지 경로
 
-v2.2 포트는 `route_hint`와 사용자 요청에 따라 작업 강도를 나눕니다.
+v2.3 포트는 `route_hint`와 사용자 요청에 따라 작업 강도를 나눕니다.
 
 | 경로 | 기본 처리 | 대상 |
 |---|---|---|
@@ -176,7 +179,7 @@ Hermes에서는 원본의 Claude Code agent 등록 방식과 `model: opus` 라�
 파일 작업에서는 원본을 보존하고 별도 출력 파일을 만드는 방식을 선호합니다. 필요할 경우 `final.md` 끝에 다음과 같은 숨은 요약 블록을 둘 수 있습니다.
 
 ```html
-<!-- HUMANIZE-SUMMARY v2.2
+<!-- HUMANIZE-SUMMARY v2.3
 run_id: ...
 metrics:
   char_in: ...
@@ -196,7 +199,7 @@ self_check:
 -->
 ```
 
-`change_rate_actual`과 `gate_exit`은 child가 확정하지 않고, 부모가 `verify_change_rate.py --stamp-summary`로 기록합니다.
+`change_rate_actual`과 통합 `gate_exit`은 child가 확정하지 않고, 부모가 `verify_gates.py --stamp-summary`로 기록합니다. `gate_exit`은 문자율뿐 아니라 S1 목표 달성, C-8 전멸, golden/수치 주입 검사까지 반영합니다.
 
 `heavy` 또는 `--strict` 파일 작업은 `00_execution.json`, `00_metrics.json` 또는 `00_metrics.error`, `01_input.txt`, `02_diagnosis.md`, `final_pre_finalize.md`, `final.md`, `09_finalize.json`이 모두 존재하고 단계 검증기를 통과해야 완료로 봅니다. 여러 body chunk를 사용했다면 `chunk_manifest.json`, manifest가 지정한 청크 윤문본, `03_reassembly_report.json`도 필요합니다. 결정적 validator는 파일·스키마와 구조·수치·인용·코드·각주의 표면 보존을 검사하며, 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조합니다. `delegate_task`를 사용할 수 없는 환경에서 main agent가 대신 처리했다면 이를 upstream-equivalent strict라고 부르지 않고 degraded fallback으로 명시합니다.
 
@@ -210,7 +213,7 @@ self_check:
 SKILL_ROOT="$PWD/skills/humanize-korean"
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --text "분석할 한국어 원문" --genre essay
 python "$SKILL_ROOT/references/metrics_v2.py" --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
-python "$SKILL_ROOT/scripts/verify_change_rate.py" --before 원문.md --after 윤문본.md --stamp-summary
+python "$SKILL_ROOT/scripts/verify_gates.py" --before 원문.md --after 윤문본.md --stamp-summary
 python "$SKILL_ROOT/scripts/validate_stage_artifacts.py" --run-dir _workspace/2026-05-25-001 --stage all --strict
 ```
 

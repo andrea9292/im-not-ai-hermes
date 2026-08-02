@@ -5,8 +5,8 @@
 - 원본 저장소: `epoko77-ai/im-not-ai`
 - 원본 라이선스: MIT
 - 원본 Claude Code 스킬: `.claude/skills/humanize-korean/`
-- 포팅 기준: upstream `v2.2.0`, commit `3120cb81e3b9910ba393cd8289864c583f0ac50a` (2026-07-18)
-- Hermes 포트: `2.2.0-hermes.2` (2026-07-21)
+- 포팅 기준: upstream `v2.3.0`, commit `82137e858763dadb99561f194c5c00465735017b` (2026-07-22)
+- Hermes 포트: `2.3.0-hermes.1` (2026-08-02)
 
 이 Hermes 포트는 원저자와 기여자의 attribution을 보존합니다. Taxonomy, quick rules, rewriting playbook, scholarship reference, metrics와 결정적 검증 도구는 원본 프로젝트에서 가져와 Hermes Agent에서 사용할 수 있도록 운영 방식을 조정했습니다.
 
@@ -19,7 +19,7 @@
 - 기본 규칙 출처는 자동 생성된 `references/quick-rules.md`입니다.
 - taxonomy와 고정 header/footer가 quick rules의 SSOT입니다.
 - metrics와 `route_hint`는 참고 신호이며 AI 판정 결과로 사용하지 않습니다.
-- 파일 작업은 `verify_change_rate.py`의 실제 계산값을 사용합니다.
+- 파일 작업은 `verify_gates.py`의 문자율·S1 목표·C-8 전멸·golden/수치 주입 통합 결과를 사용합니다. `verify_change_rate.py`는 하위 호환용으로 유지합니다.
 - 입력 길이는 route를 바꾸지 않습니다. Heavy/strict에서도 단일 child가 안정적으로 처리하기 어려운 장문이거나 사용자가 요청한 경우에만 `--chunk`를 쓰며, body chunk가 2개 이상일 때만 청크 경로를 사용합니다.
 - 부모 agent는 child의 완료 보고를 그대로 믿지 않고 모든 산출물을 다시 읽어 결정적 검증을 수행합니다.
 - strict에서 delegation을 사용할 수 없으면 자동 fallback하지 않습니다. 승인된 in-process 결과는 degraded non-strict로 구분하며, `hold_and_report`는 finalizer가 해결하지 못한 보존 의심에만 사용합니다.
@@ -35,8 +35,10 @@
 - `references/metrics.py`, `metrics_v2.py`: 정량 보조 지표와 변경률 계산
 - `scripts/prepare_monolith_input.py`: metrics, `route_hint`, 선택적 lossless chunk 생성
 - `scripts/build_quick_rules.py`: taxonomy-to-quick-rules 생성·동기화 검사
+- `scripts/build_diagnosis_rules.py`: taxonomy-to-diagnosis-rules 생성·동기화 검사
 - `scripts/reassemble_chunks.py`: source hash와 문자 수 대사를 포함한 청크 재조립
-- `scripts/verify_change_rate.py`: 30% 경고·50% 중단의 결정적 게이트
+- `scripts/verify_gates.py`: 문자율·S1 목표·C-8 전멸·golden/수치 주입의 통합 구조 게이트
+- `scripts/verify_change_rate.py`: 하위 호환 문자율 게이트와 Hermes summary/provenance 기록 helper
 - `scripts/validate_stage_artifacts.py`: 역할별 필수 산출물과 구조·수치·인용·코드·각주의 표면 보존 검증. 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조
 - `scripts/update_execution_state.py`: 부모가 검증한 Hermes 역할 completion과 게이트 결과 기록
 - `references/runtime-agents/`: Hermes용 diagnostician·monolith·finalizer 역할 계약
@@ -56,6 +58,6 @@
 
 ## 유지보수
 
-- taxonomy를 수정하면 `python scripts/build_quick_rules.py`로 생성물을 갱신합니다.
-- 배포 전 `python -m pytest tests -q`와 `python scripts/build_quick_rules.py --check`를 모두 통과해야 합니다.
+- taxonomy를 수정하면 `python scripts/build_quick_rules.py`와 `python scripts/build_diagnosis_rules.py`로 생성물을 갱신합니다.
+- 배포 전 `python -m pytest tests -q`, 두 생성기의 `--check`, package contents 검사를 모두 통과해야 합니다.
 - upstream sync가 바뀌면 `README.md`, `SOURCE.md`, `RELEASE_NOTES.md`, `MAINTAINING.md`를 함께 갱신합니다.

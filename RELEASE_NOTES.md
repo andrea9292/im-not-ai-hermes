@@ -1,5 +1,31 @@
 # 릴리즈 노트
 
+## 2.3.0-hermes.1 (2026-08-02)
+
+원본 `epoko77-ai/im-not-ai` v2.3.0(`82137e85`)의 구조 수렴 게이트와 진단 슬림 인덱스를 기존 Hermes-native delegation·부모 검증 계약 위에 선택적으로 이식했습니다.
+
+### 핵심 변경
+
+- 문자 변경률, S1 목표 달성, C-8 대구 전멸, golden/수치 주입을 결합한 `verify_gates.py`를 새 채택 게이트로 추가했습니다.
+- 문장 터치율과 원문 수치 소실은 관찰값으로 보고하되 독립 실패 축으로 사용하지 않습니다.
+- taxonomy에서 71패턴 `diagnosis-rules.md`를 생성하는 `build_diagnosis_rules.py`와 drift 검사를 추가했습니다.
+- diagnostician은 전체 taxonomy 대신 슬림 진단 인덱스를 읽습니다. taxonomy는 유지보수·감사 SSOT로 남습니다.
+- `metrics_v2.antithesis_count()`와 golden `number_injected` 검사를 추가했습니다.
+- `verify_change_rate.py`는 하위 호환 및 Hermes summary/provenance 기록 helper로 유지합니다.
+
+### Hermes 적응
+
+- `verify_gates.py`에 `--stamp-summary`와 `--execution-state`를 추가해 부모가 측정한 문자율과 통합 gate exit를 기존 필드에 기록합니다.
+- `delegate_task`, fresh-context 3역할, child artifact read-back, stage validator, `final_pre_finalize.md`, `00_execution.json` 계약을 유지했습니다.
+- upstream 이슈 #54의 Light-finalizer `diagnosis_path` 모순은 임의로 해결하지 않았습니다.
+- Claude Code 전용 `Agent`, `model: opus`, slash command는 가져오지 않았습니다.
+
+### 검증
+
+- Python 3.12 pytest: 208 passed, 1 skipped, 22 subtests passed.
+- Python 3.11 stdlib unittest: 209 tests passed, 1 skipped.
+- quick-rules·diagnosis-rules drift 검사와 22개 필수 package contents 검사를 통과했습니다.
+
 ## 2.2.0-hermes.2 (2026-07-21)
 
 upstream v2.2의 경로별 역할 분리를 Hermes-native delegation으로 복원했습니다. Claude Code 전용 agent 등록과 모델 라우팅은 가져오지 않지만, diagnostician→monolith→finalizer의 fresh-context 효과와 산출물 계약은 보존합니다.

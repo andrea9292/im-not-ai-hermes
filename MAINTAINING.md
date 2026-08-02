@@ -64,6 +64,7 @@ PY
 ```bash
 python3 -m pytest skills/humanize-korean/tests -q
 python3 skills/humanize-korean/scripts/build_quick_rules.py --check
+python3 skills/humanize-korean/scripts/build_diagnosis_rules.py --check
 python3 skills/humanize-korean/scripts/check_package_contents.py
 ```
 
