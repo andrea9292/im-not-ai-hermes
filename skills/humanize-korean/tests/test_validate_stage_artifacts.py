@@ -340,11 +340,13 @@ class ValidateStageArtifactsTests(unittest.TestCase):
 class OrchestrationContractTests(unittest.TestCase):
     def test_skill_requires_hermes_runtime_roles(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("version: 2.2.0-hermes.2", skill)
+        self.assertIn("version: 2.3.0-hermes.1", skill)
         self.assertIn("### 4. Hermes-native delegation contract", skill)
         self.assertIn("heavy` / explicit `strict` must never silently fall back", skill)
         self.assertIn("final_pre_finalize.md", skill)
         self.assertIn("09_finalize.json", skill)
+        self.assertIn("references/diagnosis-rules.md", skill)
+        self.assertIn("scripts/verify_gates.py", skill)
         self.assertIn("explicit `strict` forces the fresh-context three-role path, not chunking", skill)
         self.assertIn("Add `--chunk` only when", skill)
         self.assertIn("if `body_chunk_count` is one", skill)
@@ -365,6 +367,14 @@ class OrchestrationContractTests(unittest.TestCase):
                 self.assertIn(marker, text)
                 self.assertNotIn("model: opus", text)
                 self.assertNotIn("TeamCreate", text)
+
+        diagnostician = (role_dir / "diagnostician.md").read_text(encoding="utf-8")
+        self.assertIn("diagnosis-rules.md", diagnostician)
+        self.assertNotIn("taxonomy_skill_ref=humanize-korean:references/ai-tell-taxonomy.md", diagnostician)
+
+        monolith = (role_dir / "monolith.md").read_text(encoding="utf-8")
+        self.assertIn("HUMANIZE-SUMMARY v2.3", monolith)
+        self.assertIn("verify_gates.py", monolith)
 
 
 if __name__ == "__main__":

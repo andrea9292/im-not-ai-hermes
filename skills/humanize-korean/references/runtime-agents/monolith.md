@@ -44,7 +44,7 @@
 윤문 본문 뒤에 `HUMANIZE-SUMMARY` 블록을 정확히 하나 붙인다.
 
 ```html
-<!-- HUMANIZE-SUMMARY v2.2
+<!-- HUMANIZE-SUMMARY v2.3
 run_id: ...
 metrics:
   char_in: ...
@@ -75,7 +75,7 @@ notes: []
 -->
 ```
 
-`change_rate_claim`은 참고값일 뿐이다. 부모가 `verify_change_rate.py`로 다시 계산해 `change_rate_actual`과 `gate_exit`을 덮어쓴다.
+`change_rate_claim`은 참고값일 뿐이다. 부모가 `verify_gates.py`로 문자율과 구조 수렴을 다시 검사해 `change_rate_actual`과 통합 `gate_exit`을 덮어쓴다.
 
 ## chunk 모드 출력
 

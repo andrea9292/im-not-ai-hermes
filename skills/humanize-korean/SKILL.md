@@ -1,7 +1,7 @@
 ---
 name: humanize-korean
 description: Use when polishing Korean text that sounds AI-generated, translated, over-structured, post-edited, or mechanically formal. Detect and reduce Korean-specific AI tells, translationese, metric-backed post-editese signals, and template-like rhythm while preserving meaning, facts, genre, register, citations, numbers, and the author's own voice.
-version: 2.2.0-hermes.2
+version: 2.3.0-hermes.1
 author: epoko77-ai, Hermes port maintained by andrea9292
 license: MIT
 metadata:
@@ -24,7 +24,7 @@ This Hermes port does not register or invoke Claude Code-only `.claude/agents`, 
 
 ## Upstream and Version Notes
 
-This port incorporates upstream changes through v2.2.0 (`3120cb81`):
+This port incorporates upstream changes through v2.3.0 (`82137e85`):
 
 - v1.6 KatFish/LREAD-inspired quantitative metrics layer (`metrics.py`, `baseline.json`)
 - v1.6.1 single-output summary pattern: prefer `final.md` with a hidden `HUMANIZE-SUMMARY` block for file workflows
@@ -35,8 +35,10 @@ This port incorporates upstream changes through v2.2.0 (`3120cb81`):
 - v2.1 taxonomy-to-quick-rules generation, golden regression checks, lossless chunking, and a diagnosis/rewrite/fidelity three-stage strict path
 - v2.2 `route_hint` (`light` / `standard` / `heavy`) so well-written text stays on a minimal path and long text is not chunked merely because it is long
 - v2.2 B-2 technical-term preservation, C-1 severity correction and academic-structure exception, and C-8 negative-positive parallelism expansion
+- v2.3 four-axis structural convergence gate (`verify_gates.py`) with change-rate, S1-target, C-8 extinction, and golden/number-injection checks
+- v2.3 taxonomy-derived diagnostician index (`diagnosis-rules.md`) plus deterministic generation and drift checks
 
-A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.2. Treat it as a metric/scholarship reference, not a default rewrite trigger.
+A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.3. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
 ## Attribution and Public Boundary
 
@@ -92,6 +94,7 @@ Do not use this skill as the primary method for:
 Load the smallest useful reference first.
 
 - `references/quick-rules.md`: Fast-path S1/S2 rules. Use this by default.
+- `references/diagnosis-rules.md`: Slim taxonomy-derived index for the diagnostician role. Use this instead of loading the full taxonomy into that child.
 - `references/ai-tell-taxonomy.md`: Full taxonomy. Use for strict review, ambiguous cases, or taxonomy-level reasoning.
 - `references/rewriting-playbook.md`: Detailed rewriting recipes. Use when quick rules are not enough.
 - `references/scholarship.md`: Full scholarship reference for translationese/post-editese claims. Use when citing or auditing the taxonomy.
@@ -99,9 +102,12 @@ Load the smallest useful reference first.
 - `references/metrics_v2.py`: Optional v2.0 post-editese/interference metrics. Standard-library only.
 - `references/baseline.json`, `references/baseline_v2.json`: Baselines and placeholder cells for metrics.
 - `references/quick-rules.header.md`, `references/quick-rules.footer.md`: Fixed templates used to generate `quick-rules.md`; edit these or the taxonomy, not the generated rule file.
+- `references/design-notes.md`, `references/empirical-validation.md`: v2.3 structural-gate rationale and empirical validation notes.
 - `scripts/prepare_monolith_input.py`: File-workflow helper that computes metrics, emits `route_hint`, and optionally creates lossless chunks.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
-- `scripts/verify_change_rate.py`: Deterministic post-edit gate; below 30% passes, 30–50% warns, and 50% or more aborts adoption.
+- `scripts/build_diagnosis_rules.py`: Rebuilds the slim diagnostician index from taxonomy metadata; `--check` verifies that it is current.
+- `scripts/verify_gates.py`: Authoritative v2.3 post-edit gate. It combines character change rate, S1 target reduction, C-8 extinction, and golden/number-injection checks and records the unified result in Hermes summary/provenance.
+- `scripts/verify_change_rate.py`: Backward-compatible standalone character-rate gate and shared Hermes summary/provenance writer. Do not use it as the sole adoption gate for new v2.3 runs.
 - `scripts/reassemble_chunks.py`: Lossless chunk reassembler with source-hash and size-ratio checks.
 - `scripts/validate_stage_artifacts.py`: Validates diagnosis, rewrite, and strict/finalize artifacts plus deterministic surface-preservation invariants. Semantic attribution, scope, and judgment strength remain the fresh-context finalizer's responsibility.
 - `scripts/update_execution_state.py`: Records parent-verified Hermes delegation completions and final gate provenance for strict runs.
@@ -122,7 +128,7 @@ Do not stack both skills mechanically. If both are relevant, let this skill gove
 
 ## Route-Aware Workflow
 
-Use one of three paths. User instructions override metrics: `정밀`, `엄격`, or `strict` forces `heavy`; `가볍게` or `빠르게만` forces `light`. Otherwise follow the shim's `route_hint`. Input length alone never changes the route in upstream v2.2. `heavy` may ask the shim for chunks when a single reliable rewrite call would exceed the practical context boundary; explicit `strict` forces the fresh-context three-role path, not chunking.
+Use one of three paths. User instructions override metrics: `정밀`, `엄격`, or `strict` forces `heavy`; `가볍게` or `빠르게만` forces `light`. Otherwise follow the shim's `route_hint`. Input length alone never changes the route in upstream v2.3. `heavy` may ask the shim for chunks when a single reliable rewrite call would exceed the practical context boundary; explicit `strict` forces the fresh-context three-role path, not chunking.
 
 | Route | Default work | Use when |
 |---|---|---|
@@ -139,7 +145,8 @@ Use one of three paths. User instructions override metrics: `정밀`, `엄격`, 
 ### 2. Load the smallest rule set
 
 - Load `references/quick-rules.md` for every normal rewrite.
-- Load `references/ai-tell-taxonomy.md` for `standard`/`heavy`, ambiguous cases, or category-level reporting.
+- Give the diagnostician `references/diagnosis-rules.md` for `standard`/`heavy`.
+- Load `references/ai-tell-taxonomy.md` in the parent only for ambiguous cases, full-rule audit, or taxonomy-level reasoning.
 - Load `references/rewriting-playbook.md` only when the quick prescription is insufficient.
 - Load `references/scholarship.md` only when auditing or citing the taxonomy's translation-studies basis.
 
@@ -164,7 +171,7 @@ Inline text follows the same upstream Phase 1. Materialize it as `01_input.txt` 
 After selecting the route, show one compact status line before dispatch:
 
 ```text
-humanize-korean 2.2.0-hermes.2 — 경로: {light|standard|heavy} ({route_hint|사용자 지정}) / 역할: {monolith | diagnostician→monolith | diagnostician→monolith[N]→finalizer} / run_id: {run_id}
+humanize-korean 2.3.0-hermes.1 — 경로: {light|standard|heavy} ({route_hint|사용자 지정}) / 역할: {monolith | diagnostician→monolith | diagnostician→monolith[N]→finalizer} / run_id: {run_id}
 ```
 
 ### 4. Hermes-native delegation contract
@@ -189,7 +196,7 @@ Top-level Hermes delegation is asynchronous. Dispatch one dependent stage, conti
 
 Child summaries are self-reports. After every completion, the parent must read or stat the declared artifact and run the applicable stage validator. A claimed write that cannot be read back is a failed stage.
 
-For `heavy`/strict, initialize `00_execution.json` after route selection with `scripts/update_execution_state.py init`. After the parent has read and validated a role output, call `record` with the actual Hermes delegation or batch ID and that output path. Record every chunk task separately, using its shared batch ID plus task index. The change-rate gate writes `change_rate`; after the finalizer verdict, call `finish --status completed` or `finish --status hold_and_report`. Never record a child merely because it was dispatched.
+For `heavy`/strict, initialize `00_execution.json` after route selection with `scripts/update_execution_state.py init`. After the parent has read and validated a role output, call `record` with the actual Hermes delegation or batch ID and that output path. Record every chunk task separately, using its shared batch ID plus task index. The unified structural gate writes the measured character rate and its unified exit code under the backward-compatible `change_rate` provenance field; after the finalizer verdict, call `finish --status completed` or `finish --status hold_and_report`. Never record a child merely because it was dispatched.
 
 **Delegation fallback**
 
@@ -202,16 +209,16 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 **Light**
 
 1. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, and `strength=보수`.
-2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants.
-3. If little needs changing, report that rather than manufacturing edits.
+2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants, then run the structural gate. Exit 2 permits one conservative rollback/retry; a repeated exit 2 stops without adoption. Issue #54's unresolved Light-finalizer `diagnosis_path` contract is not guessed here.
+3. If little needs changing and the measured rate is below 5%, report that rather than manufacturing edits.
 
 **Standard**
 
-1. Dispatch one leaf child using `references/runtime-agents/diagnostician.md` to write `02_diagnosis.md`.
+1. Dispatch one leaf child using `references/runtime-agents/diagnostician.md` with `taxonomy_path=references/diagnosis-rules.md` to write `02_diagnosis.md`.
 2. Read back and validate the diagnosis, then rerun the shim with `--diagnosis`.
 3. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, targeting the diagnosed 3–6 patterns.
-4. Read back and validate `final.md`, then apply the deterministic change-rate gate.
-5. Run a finalizer only under the upstream escalation table: gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls. When escalation applies, copy the current `final.md` to `final_pre_finalize.md` before dispatch, then call `references/runtime-agents/finalizer.md` with the original, diagnosis, rewritten, backup, and `09_finalize.json` report paths. After completion, read back and validate both `final.md` and `09_finalize.json`, rerun the deterministic change-rate gate with `--stamp-summary`, and apply the resulting gate and finalizer verdict. `hold_and_report` is a human-review stop and must not be reported as an adopted final result.
+4. Read back and validate `final.md`, then apply the deterministic structural gate.
+5. Run a finalizer only under the upstream escalation table: structural gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls. When escalation applies, copy the current `final.md` to `final_pre_finalize.md` before dispatch, then call `references/runtime-agents/finalizer.md` with the original, diagnosis, rewritten, backup, and `09_finalize.json` report paths. After completion, read back and validate both `final.md` and `09_finalize.json`, rerun the deterministic structural gate with `--stamp-summary`, and apply the resulting gate and finalizer verdict. `hold_and_report` is a human-review stop and must not be reported as an adopted final result.
 
 **Heavy / strict**
 
@@ -220,28 +227,28 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 3. Without a chunk manifest, dispatch one monolith child with `mode=document`, `input_path=01_input_with_metrics.txt`, and `output_path=final.md`. With a deliberate chunk manifest, if `body_chunk_count` is one, use `mode=document` and the manifest-declared `input_file`; if it is two or more, create one `delegate_task(tasks=[...])` batch whose leaf tasks each use `mode=chunk` and distinct manifest-declared `input_file` and `rewritten_file` paths.
 4. Run at most four chunk children concurrently for upstream parity and respect any lower Hermes runtime cap. Split larger manifests into sequential batches. Children must never write the same file.
 5. After the consolidated batch completion, verify every rewritten chunk. Then run `scripts/reassemble_chunks.py --run-dir <run-dir> --strict --output final.md`. For a single-document path, validate `final.md` directly.
-6. Run `scripts/verify_change_rate.py`. Exit 1 triggers finalizer review. Exit 2 forbids adoption: restore the last safe version and rerun monolith conservatively once; a second exit 2 stops as `hold_and_report`. Exit 3 must be fixed and rerun, never skipped.
+6. Run `scripts/verify_gates.py`. Exit 1 triggers finalizer review. Exit 2 forbids adoption: restore the last safe version and rerun monolith conservatively once; a second exit 2 stops as `hold_and_report`. Exit 3 must be fixed and rerun, never skipped.
 7. Copy the current `final.md` to `final_pre_finalize.md` before finalization.
 8. Dispatch one leaf child using `references/runtime-agents/finalizer.md`. It must directly compare `01_input.txt`, `final.md`, and `02_diagnosis.md`, perform only local corrections, and write `09_finalize.json`.
-9. Read back `final.md` and `09_finalize.json`, rerun the change-rate gate, stamp the parent-measured value into the summary/provenance, then run `scripts/validate_stage_artifacts.py --stage all --strict`. `hold_and_report` is a safe human-review stop, not a successfully adopted final result.
+9. Read back `final.md` and `09_finalize.json`, rerun the structural gate, stamp the parent-measured rate and unified gate result into the summary/provenance, then run `scripts/validate_stage_artifacts.py --stage all --strict`. `hold_and_report` is a safe human-review stop, not a successfully adopted final result.
 
 The parent must not substitute a bulk string-replacement script for the monolith role. Mechanical replacement is especially unsafe for `할 수 있다`, passive forms, formal nouns, and connective endings.
 
 ### 6. Apply the deterministic gate for file output
 
 ```bash
-python "$SKILL_ROOT/scripts/verify_change_rate.py" \
+python "$SKILL_ROOT/scripts/verify_gates.py" \
   --before <original> --after <final> --stamp-summary
 ```
 
 For strict/heavy, also pass `--execution-state <run-dir>/00_execution.json` so the same parent-measured gate result is recorded in provenance.
 
-- exit `0`, below 30%: proceed
-- exit `1`, 30–50%: warn about possible over-editing and perform fidelity review
-- exit `2`, 50% or more: do not adopt the rewrite; roll back or re-run conservatively once
+- exit `0`: all structural gates converge; proceed
+- exit `1`: one or more warning axes fired (30–50% rate, insufficient S1 reduction, C-8 extinction, or golden/number-injection failure); perform fidelity review
+- exit `2`: 50% or more character change; do not adopt the rewrite, then roll back or re-run conservatively once
 - exit `3`: fix the input problem; never report an unverified rate
 
-`--ignore-markup` may be used only as a secondary measurement when heading/list conversion inflates the rate. If it changes the interpretation, report both measurements.
+`--ignore-markup` may be used only as a secondary measurement when heading/list conversion inflates the rate. If it changes the interpretation, report both measurements. Sentence-touch rate and dropped original numbers are advisory observations, not independent failure axes. `verify_change_rate.py` remains available for backward compatibility but is not sufficient by itself for v2.3 adoption.
 
 ### 7. Return the result
 
@@ -292,6 +299,7 @@ against that directory; `SKILL_ROOT` points to the installed package.
 SKILL_ROOT="<absolute-installed-skill-directory>"
 # Confirm the generated quick rules match taxonomy metadata.
 python "$SKILL_ROOT/scripts/build_quick_rules.py" --check
+python "$SKILL_ROOT/scripts/build_diagnosis_rules.py" --check
 
 # Prepare a normal route-aware input bundle.
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay
@@ -301,8 +309,8 @@ python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --gen
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --run-dir <run-dir> --genre essay --diagnosis <run-dir>/02_diagnosis.md --chunk
 python "$SKILL_ROOT/scripts/reassemble_chunks.py" --run-dir <run-dir> --strict --output final.md
 
-# Measure the adopted rewrite rather than trusting an LLM estimate.
-python "$SKILL_ROOT/scripts/verify_change_rate.py" --before <original> --after <final> --stamp-summary
+# Apply the unified structural gate rather than trusting an LLM estimate.
+python "$SKILL_ROOT/scripts/verify_gates.py" --before <original> --after <final> --stamp-summary
 
 # Validate stage contracts and deterministic surface-preservation invariants.
 python "$SKILL_ROOT/scripts/validate_stage_artifacts.py" \
@@ -322,7 +330,7 @@ When writing files, prefer this pattern:
 3. For file workflows, append a hidden HTML summary block to `final.md` instead of requiring a second `summary.md` file:
 
 ```html
-<!-- HUMANIZE-SUMMARY v2.2
+<!-- HUMANIZE-SUMMARY v2.3
 run_id: ...
 metrics:
   char_in: ...
