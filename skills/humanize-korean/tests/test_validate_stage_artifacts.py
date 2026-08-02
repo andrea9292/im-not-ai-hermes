@@ -341,6 +341,11 @@ class OrchestrationContractTests(unittest.TestCase):
     def test_skill_requires_hermes_runtime_roles(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("version: 2.3.0-hermes.1", skill)
+        self.assertNotIn(
+            "references/runtime-agents/*.md",
+            skill,
+            "Hermes skill installers treat support-path wildcards as literal files",
+        )
         self.assertIn("### 4. Hermes-native delegation contract", skill)
         self.assertIn("heavy` / explicit `strict` must never silently fall back", skill)
         self.assertIn("final_pre_finalize.md", skill)

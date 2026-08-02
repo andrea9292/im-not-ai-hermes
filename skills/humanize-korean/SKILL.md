@@ -186,7 +186,7 @@ Do not replace these fresh-context roles with one parent-agent rewrite merely be
 
 Each child starts without conversation history. Its `goal` and `context` must therefore include:
 
-- the absolute path of the appropriate `references/runtime-agents/*.md` contract; if the child cannot access it, tell the child to load the same file with `skill_view`
+- the absolute path of the appropriate packaged runtime-agent contract listed above; if the child cannot access it, tell the child to load the same file with `skill_view`
 - all absolute input and output paths; rule/taxonomy references may use `skill_view` only when the installed filesystem path is unavailable
 - route, mode, genre, strength, `run_id`, and user preservation constraints
 - an instruction to read the role contract first, write only the declared output, and return a compact artifact summary
