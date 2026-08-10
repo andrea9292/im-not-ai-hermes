@@ -19,7 +19,7 @@
 | Hermes skill name | `humanize-korean` |
 | Repository | `andrea9292/im-not-ai-hermes` |
 | Package path | `skills/humanize-korean/` |
-| Hermes port version | `2.2.0-hermes.1` |
+| Hermes port version | `2.2.1-hermes.1` |
 | Original project | `epoko77-ai/im-not-ai` |
 | Original baseline | v2.2.0, upstream commit `3120cb81`까지 반영 |
 | License | MIT |

@@ -57,6 +57,11 @@ def _read(path: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+    if _SCRIPTS not in sys.path:
+        sys.path.insert(0, _SCRIPTS)
+    import _stdio  # noqa: E402
+    _stdio.force_utf8_stdio()
     p = argparse.ArgumentParser(description="철칙 #4 변경률 게이트")
     p.add_argument("--before", required=True, help="원문 경로 (01_input.txt)")
     p.add_argument("--after", required=True, help="윤문본 경로 (final.md)")

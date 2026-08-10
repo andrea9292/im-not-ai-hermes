@@ -1,5 +1,21 @@
 # 릴리즈 노트
 
+## 2.2.1-hermes.1 (2026-08-10)
+
+Windows 콘솔(cp949)에서 CLI 게이트가 em dash(—) 출력 시 `UnicodeEncodeError`로 죽는 버그를 수정했습니다.
+
+### 핵심 변경
+
+- `scripts/_stdio.py`를 신설해 stdout/stderr를 UTF-8로 재구성하는 `force_utf8_stdio()`를 제공합니다.
+- `verify_change_rate.py`, `build_quick_rules.py`, `prepare_monolith_input.py`, `reassemble_chunks.py` 4종의 `main()`에서 이를 호출합니다.
+- 이전에는 `verify_change_rate.py`가 cp949 콘솔에서 "통과(exit 0) 후 출력 중 크래시 → exit 1"이 되어 호출부가 **과윤문 경고로 오독**하는 문제가 있었습니다. 이제 판정 문구(em dash 포함)가 항상 UTF-8로 안전하게 출력됩니다.
+- `main()` 내에서 스크립트 자신의 디렉토리를 `sys.path`에 명시적으로 추가해 테스트 모듈 import 방식과 충돌하지 않습니다.
+
+### 검증
+
+- cp949 강제(`PYTHONIOENCODING=cp949`) 환경에서 em dash 문구 출력이 크래시 없이 정상 동작합니다.
+- pytest 133개(1 skip) 전체 통과를 유지합니다.
+
 ## 2.2.0-hermes.1 (2026-07-21)
 
 원본 `epoko77-ai/im-not-ai` v2.2.0(`3120cb81`)의 taxonomy·검증·경로 선택 변경을 Hermes-native skill package에 반영했습니다.

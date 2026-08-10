@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -39,6 +40,11 @@ def _trailing_ws(s: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+    if _SCRIPTS not in sys.path:
+        sys.path.insert(0, _SCRIPTS)
+    import _stdio  # noqa: E402
+    _stdio.force_utf8_stdio()
     p = argparse.ArgumentParser(description="Humanize KR chunk reassembler")
     p.add_argument("--run-dir", required=True, help="chunk_manifest.json 이 있는 런 디렉토리")
     p.add_argument("--output", default="03_reassembled.md", help="병합 결과 파일명")

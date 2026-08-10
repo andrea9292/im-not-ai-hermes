@@ -10,7 +10,7 @@
 | Original license | MIT |
 | Original release | `v2.2.0` |
 | Upstream commit used for this port | `3120cb81e3b9910ba393cd8289864c583f0ac50a` |
-| Hermes port version | `2.2.0-hermes.1` |
+| Hermes port version | `2.2.1-hermes.1` |
 | Sync date | `2026-07-21` |
 | Hermes repository | https://github.com/andrea9292/im-not-ai-hermes |
 
