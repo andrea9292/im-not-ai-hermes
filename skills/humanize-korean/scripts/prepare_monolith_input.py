@@ -755,6 +755,11 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+    if _SCRIPTS not in sys.path:
+        sys.path.insert(0, _SCRIPTS)
+    import _stdio  # noqa: E402
+    _stdio.force_utf8_stdio()
     p = argparse.ArgumentParser(description="Humanize Korean v2.2 Hermes input shim")
     p.add_argument("--run-dir", help="Existing run directory (relative ok)")
     p.add_argument("--text", help="Inline text input (creates new run dir)")

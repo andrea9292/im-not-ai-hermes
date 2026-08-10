@@ -155,6 +155,11 @@ def build() -> tuple[str, list[dict]]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+    if _SCRIPTS not in sys.path:
+        sys.path.insert(0, _SCRIPTS)
+    import _stdio  # noqa: E402
+    _stdio.force_utf8_stdio()
     ap = argparse.ArgumentParser(description="quick-rules.md 생성기")
     ap.add_argument(
         "--check",

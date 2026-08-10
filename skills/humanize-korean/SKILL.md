@@ -1,7 +1,7 @@
 ---
 name: humanize-korean
 description: Use when polishing Korean text that sounds AI-generated, translated, over-structured, post-edited, or mechanically formal. Detect and reduce Korean-specific AI tells, translationese, metric-backed post-editese signals, and template-like rhythm while preserving meaning, facts, genre, register, citations, numbers, and the author's own voice.
-version: 2.2.0-hermes.1
+version: 2.2.1-hermes.1
 author: epoko77-ai, Hermes port maintained by andrea9292
 license: MIT
 metadata:
