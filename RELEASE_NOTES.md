@@ -10,6 +10,7 @@
 - upstream `v2.3.2`의 Windows 콘솔 하드닝을 선택적으로 백포트했습니다. 패키지 CLI가 stdout·stderr를 UTF-8로 재설정하며, 구조 게이트와 하위 호환 변경률 게이트의 예기치 못한 예외는 경고 exit `1`과 구분되는 실행 오류 exit `3`으로 정규화합니다.
 - 기존 `--run-dir`이 없을 때 입력 확인 전에 빈 디렉터리를 만들던 동작을 수정했습니다. 일반·chunk 경로 모두 부작용 없이 중단하며, `--text`를 함께 준 새 실행에서만 지정 디렉터리를 생성합니다.
 - upstream #88의 rulebook 경로 계약을 Hermes dispatch에 반영했습니다. diagnostician의 `taxonomy_path`와 모든 monolith의 `quick_rules_path`를 설치된 skill의 절대 경로로 전달해 사용자 cwd에서 상대 경로로 잘못 해석되지 않도록 했습니다.
+- 설치형 package 검사에 metrics·baseline과 quick-rules builder·template의 transitive 의존 파일 7개를 추가했습니다. 불완전 설치본이 `package_ok`를 통과한 뒤 게이트 import에서 실패하는 조용한 배포 결함을 차단합니다.
 
 ## 2.3.0-hermes.1 (2026-08-02)
 

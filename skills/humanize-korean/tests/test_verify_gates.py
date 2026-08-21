@@ -290,6 +290,42 @@ class InstalledCandidateSmokeTests(unittest.TestCase):
             self.assertEqual(gate.returncode, 0, gate.stdout + gate.stderr)
             self.assertIn("[P3 golden] PASS", gate.stdout)
 
+    def test_installed_check_rejects_missing_transitive_runtime_files(self) -> None:
+        source_root = Path(PROJECT_ROOT)
+        missing_runtime = (
+            "references/metrics.py",
+            "references/metrics_v2.py",
+            "references/baseline.json",
+            "references/baseline_v2.json",
+            "references/quick-rules.header.md",
+            "references/quick-rules.footer.md",
+            "scripts/build_quick_rules.py",
+        )
+        with tempfile.TemporaryDirectory() as d:
+            candidate = Path(d) / "humanize-korean"
+            ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
+            shutil.copytree(source_root, candidate, ignore=ignore)
+            for relative in missing_runtime:
+                (candidate / relative).unlink()
+
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(candidate / "scripts" / "check_package_contents.py"),
+                    "--skill-root",
+                    str(candidate),
+                    "--expected-version",
+                    "2.3.0-hermes.1",
+                    "--installed",
+                ],
+                capture_output=True,
+                text=True,
+            )
+
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        for relative in missing_runtime:
+            self.assertIn(f"missing: {relative}", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
