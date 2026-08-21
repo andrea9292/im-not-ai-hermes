@@ -338,9 +338,49 @@ class ValidateStageArtifactsTests(unittest.TestCase):
 
 
 class OrchestrationContractTests(unittest.TestCase):
+    def test_release_version_markers_are_synchronized(self) -> None:
+        repo_root = SKILL_ROOT.parent.parent
+        expected = "2.3.2-hermes.1"
+        markers = {
+            SKILL_ROOT / "SKILL.md": (
+                f"version: {expected}",
+                "through v2.3.2 (`bad4ef0a`)",
+                f"humanize-korean {expected} — 경로:",
+            ),
+            SKILL_ROOT / "references" / "hermes-port-notes.md": (
+                "upstream `v2.3.2`, commit "
+                "`bad4ef0a2b514318b2278b65cb4545414ad84d82`",
+                f"Hermes 포트: `{expected}`",
+            ),
+            SKILL_ROOT / "scripts" / "check_package_contents.py": (
+                f'default="{expected}"',
+            ),
+        }
+        repo_markers = {
+            repo_root / "README.md": (
+                f"| Hermes port version | `{expected}` |",
+                "Original baseline | v2.3.2, upstream commit `bad4ef0a`",
+            ),
+            repo_root / "SOURCE.md": (
+                "| Original release | `v2.3.2` |",
+                "`bad4ef0a2b514318b2278b65cb4545414ad84d82`",
+                f"| Hermes port version | `{expected}` |",
+            ),
+            repo_root / "RELEASE_NOTES.md": (
+                f"## {expected} (2026-08-21)",
+            ),
+        }
+        if all(path.is_file() for path in repo_markers):
+            markers.update(repo_markers)
+        for path, expected_markers in markers.items():
+            text = path.read_text(encoding="utf-8")
+            for marker in expected_markers:
+                with self.subTest(path=path.name, marker=marker):
+                    self.assertIn(marker, text)
+
     def test_skill_requires_hermes_runtime_roles(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("version: 2.3.0-hermes.1", skill)
+        self.assertIn("version: 2.3.2-hermes.1", skill)
         self.assertNotIn(
             "references/runtime-agents/*.md",
             skill,

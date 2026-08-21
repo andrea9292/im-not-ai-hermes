@@ -8,26 +8,29 @@
 |---|---|
 | Original repository | https://github.com/epoko77-ai/im-not-ai |
 | Original license | MIT |
-| Original release | `v2.3.0` |
-| Upstream commit used for this port | `82137e858763dadb99561f194c5c00465735017b` |
-| Hermes port version | `2.3.0-hermes.1` |
-| Sync date | `2026-08-02` |
+| Original release | `v2.3.2` |
+| Upstream commit used for this port | `bad4ef0a2b514318b2278b65cb4545414ad84d82` |
+| Hermes port version | `2.3.2-hermes.1` |
+| Sync date | `2026-08-21` |
 | Hermes repository | https://github.com/andrea9292/im-not-ai-hermes |
 
-원본 v2.3.0은 v2.2의 `route_hint` 기반 3경로와 손실 없는 청킹을 유지하면서, 4축 구조 수렴 게이트와 taxonomy에서 생성하는 diagnostician 전용 슬림 인덱스를 추가했습니다.
+원본 v2.3.2는 v2.3.0의 taxonomy·`route_hint` 기반 3경로·4축 구조 수렴 게이트를 유지하면서, v2.3.1~v2.3.2에서 실행 경로, 내용 앵커, 텍스트 위생, Windows 콘솔, 런타임 패키지 위치를 보정했습니다. Taxonomy와 baseline의 의미 내용은 v2.3.0 대비 바뀌지 않았습니다.
 
 ## 파일 매핑
 
 | 원본 또는 개념 | Hermes 포트 |
 |---|---|
-| `.claude/skills/humanize-korean/SKILL.md`의 규칙·경로 정책 | `skills/humanize-korean/SKILL.md`의 Hermes-native workflow |
-| `.claude/skills/humanize-korean/references/*.md` | `skills/humanize-korean/references/*.md` |
-| `.claude/skills/humanize-korean/references/*.json` | `skills/humanize-korean/references/*.json` |
-| `.claude/skills/humanize-korean/references/*.py` | `skills/humanize-korean/references/*.py` |
+| `skills/humanize-korean/SKILL.md`의 규칙·경로 정책 | `skills/humanize-korean/SKILL.md`의 Hermes-native workflow |
+| `skills/humanize-korean/references/*.md` | `skills/humanize-korean/references/*.md` |
+| `skills/humanize-korean/references/*.json` | `skills/humanize-korean/references/*.json` |
+| `skills/humanize-korean/references/*.py` | `skills/humanize-korean/references/*.py` |
 | `agents/humanize-diagnostician.md` | `skills/humanize-korean/references/runtime-agents/diagnostician.md` |
 | `agents/humanize-monolith.md` | `skills/humanize-korean/references/runtime-agents/monolith.md` |
 | `agents/humanize-finalizer.md` | `skills/humanize-korean/references/runtime-agents/finalizer.md` |
 | `scripts/prepare_monolith_input.py` | `skills/humanize-korean/scripts/prepare_monolith_input.py` |
+| `scripts/sanitize_text.py` | `skills/humanize-korean/scripts/sanitize_text.py` |
+| `scripts/console.py` | `skills/humanize-korean/scripts/console.py` |
+| `scripts/checks.py` | `skills/humanize-korean/scripts/golden_checks.py` |
 | `scripts/build_quick_rules.py` | `skills/humanize-korean/scripts/build_quick_rules.py` |
 | `scripts/build_diagnosis_rules.py` | `skills/humanize-korean/scripts/build_diagnosis_rules.py` |
 | `scripts/reassemble_chunks.py` | `skills/humanize-korean/scripts/reassemble_chunks.py` |
@@ -71,6 +74,9 @@
 - register, 구조, 각주, 직접 인용 보존을 점검하는 골든 회귀 테스트
 - 진단 ID·summary·finalize JSON·헤딩·수치·인용·코드·각주 보존을 점검하는 단계 검증기
 - Hermes fresh-context delegation용 diagnostician·monolith·finalizer 역할 계약
+- Light finalizer의 선택적 `diagnosis_path`와 내용 앵커 보존 계약
+- NFD·비가시 문자 입력 위생 처리와 Windows cp949 콘솔·게이트 exit 3 보호
+- cwd 기준 run-dir 해석, 절대 rule path dispatch, 설치형 transitive package 검사
 - GitHub Actions에서 Python 3.11·3.12 회귀 테스트와 quick-rules·diagnosis-rules 동기화 검사
 
 A-17은 upstream v2.3에서도 hold 상태입니다. 지표·학술 참고로만 유지하며 기본 윤문 트리거로 사용하지 않습니다.
@@ -82,6 +88,8 @@ A-17은 upstream v2.3에서도 hold 상태입니다. 지표·학술 참고로만
 - 원본의 경로별 역할 호출 수는 Hermes `delegate_task` 실행 계약으로 보존하되, 모델 선택은 Hermes 전역 delegation 설정에 맡깁니다.
 - web service 구현은 포함하지 않습니다. `web-service-spec.md`는 참고 문서로만 유지합니다.
 - 원본의 live Claude CLI 테스트는 포함하지 않습니다. 공개 CI는 결정적·stdlib 기반 테스트만 실행합니다.
+- Claude live runner에 결합된 `eval_baseline.py`, `eval_compare.py`, watermark snapshot·runbook은 포함하지 않습니다.
+- upstream의 Claude plugin layout 이동은 Hermes가 이미 사용하는 루트 `skills/` 구조와 동등하므로 별도 manifest·installer를 가져오지 않습니다.
 
 ## 동기화 시 점검 항목
 

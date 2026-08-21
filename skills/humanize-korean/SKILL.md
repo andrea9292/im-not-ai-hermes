@@ -1,7 +1,7 @@
 ---
 name: humanize-korean
 description: Use when polishing Korean text that sounds AI-generated, translated, over-structured, post-edited, or mechanically formal. Detect and reduce Korean-specific AI tells, translationese, metric-backed post-editese signals, and template-like rhythm while preserving meaning, facts, genre, register, citations, numbers, and the author's own voice.
-version: 2.3.0-hermes.1
+version: 2.3.2-hermes.1
 author: epoko77-ai, Hermes port maintained by andrea9292
 license: MIT
 metadata:
@@ -24,7 +24,7 @@ This Hermes port does not register or invoke Claude Code-only `.claude/agents`, 
 
 ## Upstream and Version Notes
 
-This port incorporates upstream changes through v2.3.0 (`82137e85`):
+This port incorporates upstream changes through v2.3.2 (`bad4ef0a`):
 
 - v1.6 KatFish/LREAD-inspired quantitative metrics layer (`metrics.py`, `baseline.json`)
 - v1.6.1 single-output summary pattern: prefer `final.md` with a hidden `HUMANIZE-SUMMARY` block for file workflows
@@ -187,7 +187,7 @@ Inline text follows the same upstream Phase 1. Materialize it as `01_input.txt` 
 After selecting the route, show one compact status line before dispatch:
 
 ```text
-humanize-korean 2.3.0-hermes.1 — 경로: {light|standard|heavy} ({route_hint|사용자 지정}) / 역할: {monolith | diagnostician→monolith | diagnostician→monolith[N]→finalizer} / run_id: {run_id}
+humanize-korean 2.3.2-hermes.1 — 경로: {light|standard|heavy} ({route_hint|사용자 지정}) / 역할: {monolith | diagnostician→monolith | diagnostician→monolith[N]→finalizer} / run_id: {run_id}
 ```
 
 ### 4. Hermes-native delegation contract

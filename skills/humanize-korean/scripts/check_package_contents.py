@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         default=Path(__file__).resolve().parent.parent,
         help="candidate skills/humanize-korean directory",
     )
-    parser.add_argument("--expected-version", default="2.3.0-hermes.1")
+    parser.add_argument("--expected-version", default="2.3.2-hermes.1")
     parser.add_argument(
         "--installed",
         action="store_true",

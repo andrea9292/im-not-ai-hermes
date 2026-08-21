@@ -19,9 +19,9 @@
 | Hermes skill name | `humanize-korean` |
 | Repository | `andrea9292/im-not-ai-hermes` |
 | Package path | `skills/humanize-korean/` |
-| Hermes port version | `2.3.0-hermes.1` |
+| Hermes port version | `2.3.2-hermes.1` |
 | Original project | `epoko77-ai/im-not-ai` |
-| Original baseline | v2.3.0, upstream commit `82137e85`까지 반영 |
+| Original baseline | v2.3.2, upstream commit `bad4ef0a`까지 반영 |
 | License | MIT |
 | Distribution | Hermes tap-friendly skill source |
 
@@ -30,13 +30,13 @@
 이 포트의 버전은 원본 버전과 Hermes 포트 패치 번호를 함께 표기합니다.
 
 ```text
-2.3.0-hermes.1
+2.3.2-hermes.1
 ```
 
 이 버전 표기의 의미는 다음과 같습니다.
 
-- `2.3.0`: 원본 `epoko77-ai/im-not-ai`의 v2.3.0 taxonomy, route-aware workflow, 구조 수렴 게이트, 진단 슬림 인덱스를 기준으로 합니다.
-- `hermes.1`: v2.3.0의 새 검증·진단 계약을 기존 Hermes `delegate_task`와 부모 검증 방식에 선택적으로 이식한 첫 번째 포트 패치입니다.
+- `2.3.2`: 원본 `epoko77-ai/im-not-ai`의 v2.3.2를 기준으로 합니다. v2.3.0 taxonomy·route-aware workflow·구조 수렴 게이트를 유지하면서 v2.3.1~v2.3.2의 실행 경로, 보존 계약, 설치 경계 수정까지 반영합니다.
+- `hermes.1`: v2.3.2의 Hermes 관련 변경을 `delegate_task`, 설치형 skill package, 부모 검증 방식에 맞게 이식한 첫 번째 포트 패치입니다.
 
 원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.4.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
 

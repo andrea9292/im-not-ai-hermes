@@ -241,7 +241,7 @@ class InstalledCandidateSmokeTests(unittest.TestCase):
 
             self.assertFalse((candidate / "tests").exists())
             skill = (candidate / "SKILL.md").read_text(encoding="utf-8")
-            self.assertIn("version: 2.3.0-hermes.1", skill)
+            self.assertIn("version: 2.3.2-hermes.1", skill)
             for role in ("diagnostician", "monolith", "finalizer"):
                 self.assertTrue(
                     (candidate / "references" / "runtime-agents" / f"{role}.md").is_file()
@@ -255,7 +255,7 @@ class InstalledCandidateSmokeTests(unittest.TestCase):
                     "--skill-root",
                     str(candidate),
                     "--expected-version",
-                    "2.3.0-hermes.1",
+                    "2.3.2-hermes.1",
                     "--installed",
                 ],
                 cwd=temp_root,
@@ -315,7 +315,7 @@ class InstalledCandidateSmokeTests(unittest.TestCase):
                     "--skill-root",
                     str(candidate),
                     "--expected-version",
-                    "2.3.0-hermes.1",
+                    "2.3.2-hermes.1",
                     "--installed",
                 ],
                 capture_output=True,

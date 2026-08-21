@@ -77,7 +77,7 @@ python3 skills/humanize-korean/scripts/validate_stage_artifacts.py \
 
 ### CI 확인
 
-GitHub Actions는 Python 3.11·3.12에서 전체 테스트와 quick-rules 동기화를 검사합니다.
+GitHub Actions는 Python 3.11·3.12에서 전체 테스트, quick-rules·diagnosis-rules 동기화, package contents와 compile 검사를 수행합니다.
 
 ### Hermes inspect 확인
 

@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-### Hermes 적응
+## 2.3.2-hermes.1 (2026-08-21)
+
+원본 `epoko77-ai/im-not-ai` v2.3.2(`bad4ef0a`)의 Hermes 관련 실행·보존·설치 경계 수정을 기존 Hermes-native delegation과 부모 검증 계약에 선택적으로 이식했습니다. Taxonomy와 baseline의 의미 내용은 v2.3.0에서 바뀌지 않았습니다.
+
+### 핵심 변경
 
 - upstream `v2.3.1`에서 확정된 이슈 #54 계약을 선택적으로 백포트했습니다. Light가 finalizer로 승급해도 diagnostician 콜을 추가하지 않으며, `diagnosis_path` 없이 원문과 윤문본을 직접 대조합니다.
 - upstream `v2.3.1`의 `anchor_ledger` 계약을 선택적으로 백포트했습니다. monolith가 편집 전에 문장별 핵심 내용 명사·개념어를 원형으로 기록하고, 앵커가 사라지는 edit을 롤백하며, finalizer가 원문과 직접 대조해 누락을 복원합니다.
@@ -11,6 +15,12 @@
 - 기존 `--run-dir`이 없을 때 입력 확인 전에 빈 디렉터리를 만들던 동작을 수정했습니다. 일반·chunk 경로 모두 부작용 없이 중단하며, `--text`를 함께 준 새 실행에서만 지정 디렉터리를 생성합니다.
 - upstream #88의 rulebook 경로 계약을 Hermes dispatch에 반영했습니다. diagnostician의 `taxonomy_path`와 모든 monolith의 `quick_rules_path`를 설치된 skill의 절대 경로로 전달해 사용자 cwd에서 상대 경로로 잘못 해석되지 않도록 했습니다.
 - 설치형 package 검사에 metrics·baseline과 quick-rules builder·template의 transitive 의존 파일 7개를 추가했습니다. 불완전 설치본이 `package_ok`를 통과한 뒤 게이트 import에서 실패하는 조용한 배포 결함을 차단합니다.
+
+### 검증
+
+- Python 3.12 pytest: 245 passed, 1 skipped, 39 subtests passed.
+- Python 3.11 stdlib unittest: 246 tests run, 1 skipped.
+- quick-rules·diagnosis-rules drift 검사, frontmatter·compile 검사와 source 34개·installed 27개 package contents 검사를 통과했습니다.
 
 ## 2.3.0-hermes.1 (2026-08-02)
 
