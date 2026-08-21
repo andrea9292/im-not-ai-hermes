@@ -381,6 +381,23 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertIn("HUMANIZE-SUMMARY v2.3", monolith)
         self.assertIn("verify_gates.py", monolith)
 
+    def test_runtime_contracts_preserve_content_anchors(self) -> None:
+        contract_paths = (
+            SKILL_ROOT / "SKILL.md",
+            SKILL_ROOT / "references" / "runtime-agents" / "monolith.md",
+            SKILL_ROOT / "references" / "runtime-agents" / "finalizer.md",
+            SKILL_ROOT / "references" / "quick-rules.header.md",
+            SKILL_ROOT / "references" / "quick-rules.footer.md",
+        )
+        for path in contract_paths:
+            with self.subTest(path=path.name):
+                text = path.read_text(encoding="utf-8")
+                self.assertIn("핵심 내용 명사·개념어", text)
+                self.assertIn("원형", text)
+
+        monolith = contract_paths[1].read_text(encoding="utf-8")
+        self.assertIn("anchor_ledger", monolith)
+
     def test_light_finalizer_allows_missing_diagnosis(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
         finalizer = (

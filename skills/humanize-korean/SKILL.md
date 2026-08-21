@@ -38,6 +38,7 @@ This port incorporates upstream changes through v2.3.0 (`82137e85`):
 - v2.3 four-axis structural convergence gate (`verify_gates.py`) with change-rate, S1-target, C-8 extinction, and golden/number-injection checks
 - v2.3 taxonomy-derived diagnostician index (`diagnosis-rules.md`) plus deterministic generation and drift checks
 - targeted v2.3.1 contract fix for upstream issue #54: a Light escalation may call the finalizer without a diagnosis file
+- targeted v2.3.1 `anchor_ledger` contract: preserve sentence-level content anchors before, during, and after rewriting
 
 A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.3. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
@@ -89,6 +90,13 @@ Do not use this skill as the primary method for:
 6. Make local edits before global rewrites. Prefer surgical changes tied to detectable patterns.
 7. Explain material changes. If a change affects tone, structure, emphasis, or publication risk, mention it briefly.
 8. Treat metrics as signals, not verdicts. Numeric scores guide attention; the final judgment is semantic, stylistic, and genre-aware.
+
+### Content anchor ledger (전 경로 공통 의미 앵커)
+
+- Before rewriting, the monolith builds an internal `anchor_ledger` of each sentence's **핵심 내용 명사·개념어** from the subject, object, and complement positions that carry the claim.
+- Particles and endings may change, but each anchor's 원형 어휘 must remain at least once. Do not delete it through sentence merging or replace it with a synonym merely for smoothness.
+- When removing AI clichés or abstract padding, remove only modifiers and formal nouns. If an edit would remove an anchor, roll back that edit.
+- Before output, compare the source and rewrite again. Restore any missing anchor in the original meaning range; fidelity takes priority over naturalness.
 
 ## Reference Files
 
