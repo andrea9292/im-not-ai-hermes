@@ -37,6 +37,7 @@ This port incorporates upstream changes through v2.3.0 (`82137e85`):
 - v2.2 B-2 technical-term preservation, C-1 severity correction and academic-structure exception, and C-8 negative-positive parallelism expansion
 - v2.3 four-axis structural convergence gate (`verify_gates.py`) with change-rate, S1-target, C-8 extinction, and golden/number-injection checks
 - v2.3 taxonomy-derived diagnostician index (`diagnosis-rules.md`) plus deterministic generation and drift checks
+- targeted v2.3.1 contract fix for upstream issue #54: a Light escalation may call the finalizer without a diagnosis file
 
 A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.3. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
@@ -210,8 +211,9 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 **Light**
 
 1. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, and `strength=보수`.
-2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants, then run the structural gate. Exit 2 permits one conservative rollback/retry; a repeated exit 2 stops without adoption. Issue #54's unresolved Light-finalizer `diagnosis_path` contract is not guessed here.
-3. If little needs changing and the measured rate is below 5%, report that rather than manufacturing edits.
+2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants, then run the structural gate. Exit 2 permits one conservative rollback/retry; a repeated exit 2 stops without adoption.
+3. **Light escalation without a diagnosis:** run the finalizer only when the structural gate exits 1, two or more monolith self-checks fail, or the user explicitly requests verification evidence. Copy `final.md` to `final_pre_finalize.md`, then call `references/runtime-agents/finalizer.md` without `diagnosis_path`. Do not add a diagnostician call: the finalizer's fidelity review compares the original and rewrite directly. Read back `final.md` and `09_finalize.json`, validate them with `scripts/validate_stage_artifacts.py --stage finalize` (not `--stage all`, which requires a diagnosis), then rerun the structural gate with `--stamp-summary` before adoption.
+4. If little needs changing and the measured rate is below 5%, report that rather than manufacturing edits.
 
 **Standard**
 

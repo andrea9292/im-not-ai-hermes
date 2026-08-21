@@ -1,5 +1,11 @@
 # 릴리즈 노트
 
+## Unreleased
+
+### Hermes 적응
+
+- upstream `v2.3.1`에서 확정된 이슈 #54 계약을 선택적으로 백포트했습니다. Light가 finalizer로 승급해도 diagnostician 콜을 추가하지 않으며, `diagnosis_path` 없이 원문과 윤문본을 직접 대조합니다.
+
 ## 2.3.0-hermes.1 (2026-08-02)
 
 원본 `epoko77-ai/im-not-ai` v2.3.0(`82137e85`)의 구조 수렴 게이트와 진단 슬림 인덱스를 기존 Hermes-native delegation·부모 검증 계약 위에 선택적으로 이식했습니다.
@@ -17,7 +23,6 @@
 
 - `verify_gates.py`에 `--stamp-summary`와 `--execution-state`를 추가해 부모가 측정한 문자율과 통합 gate exit를 기존 필드에 기록합니다.
 - `delegate_task`, fresh-context 3역할, child artifact read-back, stage validator, `final_pre_finalize.md`, `00_execution.json` 계약을 유지했습니다.
-- upstream 이슈 #54의 Light-finalizer `diagnosis_path` 모순은 임의로 해결하지 않았습니다.
 - Claude Code 전용 `Agent`, `model: opus`, slash command는 가져오지 않았습니다.
 
 ### 검증

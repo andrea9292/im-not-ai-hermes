@@ -381,6 +381,20 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertIn("HUMANIZE-SUMMARY v2.3", monolith)
         self.assertIn("verify_gates.py", monolith)
 
+    def test_light_finalizer_allows_missing_diagnosis(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        finalizer = (
+            SKILL_ROOT / "references" / "runtime-agents" / "finalizer.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("Light escalation without a diagnosis", skill)
+        self.assertIn("Do not add a diagnostician call", skill)
+        self.assertIn("--stage finalize", skill)
+        self.assertIn("`diagnosis_path` (선택)", finalizer)
+        self.assertIn("Light 경로에는 진단 파일이 없다", finalizer)
+        self.assertIn("중단하지 않는다", finalizer)
+        self.assertIn("Light·standard 승급 또는 heavy/strict", finalizer)
+
 
 if __name__ == "__main__":
     unittest.main()
