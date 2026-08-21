@@ -78,6 +78,7 @@ skills/humanize-korean/references/metrics.py            # v1.6 계열 정량 지
 skills/humanize-korean/references/metrics_v2.py         # v2.0 후편집투·간섭 지표 보조 도구
 skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·청킹 준비
 skills/humanize-korean/scripts/sanitize_text.py         # NFD·비가시 문자·줄바꿈 입력 위생 처리
+skills/humanize-korean/scripts/console.py               # Windows cp949 콘솔 출력·게이트 종료 코드 보호
 skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
 skills/humanize-korean/scripts/build_diagnosis_rules.py # taxonomy 기반 진단 인덱스 생성
 skills/humanize-korean/scripts/verify_gates.py          # 4축 구조 수렴 게이트

@@ -20,6 +20,7 @@ RUNTIME_REQUIRED = (
     "references/runtime-agents/finalizer.md",
     "scripts/prepare_monolith_input.py",
     "scripts/sanitize_text.py",
+    "scripts/console.py",
     "scripts/build_diagnosis_rules.py",
     "scripts/golden_checks.py",
     "scripts/verify_gates.py",
@@ -37,6 +38,7 @@ TEST_REQUIRED = (
     "tests/test_runtime_provenance.py",
     "tests/test_stage_validator_regressions.py",
     "tests/test_sanitize.py",
+    "tests/test_console_encoding.py",
 )
 
 SOURCE_REQUIRED = RUNTIME_REQUIRED + TEST_REQUIRED
@@ -81,4 +83,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    import console as _console
+
+    _console.force_utf8_console()
     raise SystemExit(main())

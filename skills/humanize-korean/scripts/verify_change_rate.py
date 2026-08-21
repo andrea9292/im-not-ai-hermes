@@ -166,4 +166,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import console as _console
+
+    sys.exit(_console.run_gate(main))

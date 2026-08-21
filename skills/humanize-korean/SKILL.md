@@ -40,6 +40,7 @@ This port incorporates upstream changes through v2.3.0 (`82137e85`):
 - targeted v2.3.1 contract fix for upstream issue #54: a Light escalation may call the finalizer without a diagnosis file
 - targeted v2.3.1 `anchor_ledger` contract: preserve sentence-level content anchors before, during, and after rewriting
 - targeted v2.3.1 input hygiene: normalize NFD Hangul and remove invisible control characters before metrics and rewriting
+- targeted v2.3.2 Windows console hardening: emit UTF-8 safely and map unexpected gate failures to exit 3 instead of warning exit 1
 
 A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.3. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
@@ -115,6 +116,7 @@ Load the smallest useful reference first.
 - `references/design-notes.md`, `references/empirical-validation.md`: v2.3 structural-gate rationale and empirical validation notes.
 - `scripts/prepare_monolith_input.py`: File-workflow helper that computes metrics, emits `route_hint`, and optionally creates lossless chunks.
 - `scripts/sanitize_text.py`: Installed stdlib-only input hygiene for NFC normalization, invisible-control removal, special-space cleanup, and line-ending normalization. It is not an AI-watermark remover.
+- `scripts/console.py`: Installed stdlib-only CLI output hardening for legacy Windows console encodings and unexpected gate failures.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/build_diagnosis_rules.py`: Rebuilds the slim diagnostician index from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/golden_checks.py`: Installed stdlib-only scorer for deterministic register, structure, quotation, footnote, and number-preservation gates.

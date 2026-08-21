@@ -415,4 +415,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    import console as _console
+
+    _console.force_utf8_console()
     raise SystemExit(main(sys.argv))
