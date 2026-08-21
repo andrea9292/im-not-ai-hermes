@@ -1,5 +1,85 @@
 # 릴리즈 노트
 
+## Unreleased
+
+## 2.3.2-hermes.1 (2026-08-21)
+
+원본 `epoko77-ai/im-not-ai` v2.3.2(`bad4ef0a`)의 Hermes 관련 실행·보존·설치 경계 수정을 기존 Hermes-native delegation과 부모 검증 계약에 선택적으로 이식했습니다. Taxonomy와 baseline의 의미 내용은 v2.3.0에서 바뀌지 않았습니다.
+
+### 핵심 변경
+
+- upstream `v2.3.1`에서 확정된 이슈 #54 계약을 선택적으로 백포트했습니다. Light가 finalizer로 승급해도 diagnostician 콜을 추가하지 않으며, `diagnosis_path` 없이 원문과 윤문본을 직접 대조합니다.
+- upstream `v2.3.1`의 `anchor_ledger` 계약을 선택적으로 백포트했습니다. monolith가 편집 전에 문장별 핵심 내용 명사·개념어를 원형으로 기록하고, 앵커가 사라지는 edit을 롤백하며, finalizer가 원문과 직접 대조해 누락을 복원합니다.
+- upstream `v2.3.1`의 입력 위생 처리를 선택적으로 백포트했습니다. metrics·route·청크 해시 전에 NFD 한글과 비가시 제어문자·특수공백·줄바꿈을 정리하고, 변경 시 `00_sanitize.json`을 남기며, `--no-sanitize`로 비활성화할 수 있습니다. 전각공백과 반복 빈 줄은 기본 보존합니다.
+- upstream `v2.3.2`의 Windows 콘솔 하드닝을 선택적으로 백포트했습니다. 패키지 CLI가 stdout·stderr를 UTF-8로 재설정하며, 구조 게이트와 하위 호환 변경률 게이트의 예기치 못한 예외는 경고 exit `1`과 구분되는 실행 오류 exit `3`으로 정규화합니다.
+- 기존 `--run-dir`이 없을 때 입력 확인 전에 빈 디렉터리를 만들던 동작을 수정했습니다. 일반·chunk 경로 모두 부작용 없이 중단하며, `--text`를 함께 준 새 실행에서만 지정 디렉터리를 생성합니다.
+- upstream #88의 rulebook 경로 계약을 Hermes dispatch에 반영했습니다. diagnostician의 `taxonomy_path`와 모든 monolith의 `quick_rules_path`를 설치된 skill의 절대 경로로 전달해 사용자 cwd에서 상대 경로로 잘못 해석되지 않도록 했습니다.
+- 설치형 package 검사에 metrics·baseline과 quick-rules builder·template의 transitive 의존 파일 7개를 추가했습니다. 불완전 설치본이 `package_ok`를 통과한 뒤 게이트 import에서 실패하는 조용한 배포 결함을 차단합니다.
+
+### 검증
+
+- Python 3.12 pytest: 245 passed, 1 skipped, 39 subtests passed.
+- Python 3.11 stdlib unittest: 246 tests run, 1 skipped.
+- quick-rules·diagnosis-rules drift 검사, frontmatter·compile 검사와 source 34개·installed 27개 package contents 검사를 통과했습니다.
+
+## 2.3.0-hermes.1 (2026-08-02)
+
+원본 `epoko77-ai/im-not-ai` v2.3.0(`82137e85`)의 구조 수렴 게이트와 진단 슬림 인덱스를 기존 Hermes-native delegation·부모 검증 계약 위에 선택적으로 이식했습니다.
+
+### 핵심 변경
+
+- 문자 변경률, S1 목표 달성, C-8 대구 전멸, golden/수치 주입을 결합한 `verify_gates.py`를 새 채택 게이트로 추가했습니다.
+- 문장 터치율과 원문 수치 소실은 관찰값으로 보고하되 독립 실패 축으로 사용하지 않습니다.
+- taxonomy에서 71패턴 `diagnosis-rules.md`를 생성하는 `build_diagnosis_rules.py`와 drift 검사를 추가했습니다.
+- diagnostician은 전체 taxonomy 대신 슬림 진단 인덱스를 읽습니다. taxonomy는 유지보수·감사 SSOT로 남습니다.
+- `metrics_v2.antithesis_count()`와 golden `number_injected` 검사를 추가했습니다.
+- `verify_change_rate.py`는 하위 호환 및 Hermes summary/provenance 기록 helper로 유지합니다.
+
+### Hermes 적응
+
+- `verify_gates.py`에 `--stamp-summary`와 `--execution-state`를 추가해 부모가 측정한 문자율과 통합 gate exit를 기존 필드에 기록합니다.
+- `delegate_task`, fresh-context 3역할, child artifact read-back, stage validator, `final_pre_finalize.md`, `00_execution.json` 계약을 유지했습니다.
+- Claude Code 전용 `Agent`, `model: opus`, slash command는 가져오지 않았습니다.
+
+### 검증
+
+- Python 3.12 pytest: 208 passed, 1 skipped, 22 subtests passed.
+- Python 3.11 stdlib unittest: 209 tests passed, 1 skipped.
+- quick-rules·diagnosis-rules drift 검사와 22개 필수 package contents 검사를 통과했습니다.
+
+## 2.2.0-hermes.2 (2026-07-21)
+
+upstream v2.2의 경로별 역할 분리를 Hermes-native delegation으로 복원했습니다. Claude Code 전용 agent 등록과 모델 라우팅은 가져오지 않지만, diagnostician→monolith→finalizer의 fresh-context 효과와 산출물 계약은 보존합니다.
+
+### 핵심 변경
+
+- `references/runtime-agents/`에 diagnostician·monolith·finalizer 역할 계약을 추가했습니다.
+- `light` 1콜, `standard` 2콜, `heavy/strict` 3+콜을 `delegate_task` 실행 계약으로 명시했습니다.
+- strict에서 delegation을 선택 사항으로 두던 기존 규칙을 폐기했습니다. 도구가 없거나 반복 실패하면 자동으로 strict 완료를 주장하지 않습니다.
+- 입력 길이로 route를 바꾸지 않습니다. Strict는 3역할을 강제하지만 청킹은 강제하지 않으며, 단일 child가 안정적으로 처리하기 어려운 장문이나 사용자 요청에서만 청크 경로를 선택합니다.
+- 청크 병렬은 manifest가 실제 body chunk를 2개 이상 만들 때만 하나의 Hermes batch로 실행하고, 각 child가 서로 다른 출력 파일만 쓰도록 했습니다.
+- main agent가 child 산출물을 다시 읽고 검증한 뒤 채택하도록 책임 경계를 정리했습니다.
+- `00_execution.json`에 실제 delegation ID, 역할 completion 순서, 부모가 측정한 변경률을 기록합니다.
+- Standard의 finalizer 승급 조건(변경률 경고, 자체검증 2개 이상 실패, 명시적 검증 증적 요청)을 복원했습니다.
+- 범용 문자열 치환을 monolith 역할의 대체물로 쓰지 못하도록 금지했습니다.
+
+### 결정적 검증
+
+- `validate_stage_artifacts.py`를 추가했습니다.
+- 진단 패턴 3~6개와 taxonomy ID, strict 필수 산출물, `09_finalize.json` 스키마와 verdict를 검사합니다.
+- 헤딩, 코드 펜스, 인라인 코드, URL, 수치, 직접 인용, Markdown 각주를 원문과 대조합니다.
+- `전달하지 못가능합니다`류 기계 치환 비문, 격식 상향, 새 상투구 주입을 검사합니다.
+- 목록 구조는 upstream C-2/C-9 변환을 기본 허용하고, 사용자가 명시적으로 보존한 실행에서만 `--preserve-lists`로 고정합니다.
+- 결정적 validator는 파일·스키마와 표면 보존 토큰을 검사합니다. 주체 귀속·범위·판단 강도 같은 의미 보존 판정은 fresh-context finalizer가 맡습니다.
+- chunk→non-chunk 모드 전환 때 낡은 manifest·청크·재조립 산출물을 제거해 이전 실행이 섞이지 않게 했습니다.
+- orchestration 계약과 runtime prompt 패키징을 회귀 테스트로 고정했습니다.
+
+### 검증
+
+- Python 3.12에서 pytest 160개 통과, 1개 skip, 22개 하위 사례 통과를 확인했습니다. Python 3.11 stdlib unittest에서는 161개 테스트 통과, 1개 skip을 확인했습니다.
+- quick-rules 동기화, Python 구문 검사, `git diff --check`를 통과했습니다.
+- 이전의 불완전 strict 실행을 단계 검증기에 넣어 diagnosis·pre-finalize·finalize 산출물 누락을 실제로 차단하는지 확인했습니다.
+
 ## 2.2.0-hermes.1 (2026-07-21)
 
 원본 `epoko77-ai/im-not-ai` v2.2.0(`3120cb81`)의 taxonomy·검증·경로 선택 변경을 Hermes-native skill package에 반영했습니다.

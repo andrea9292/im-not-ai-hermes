@@ -19,9 +19,9 @@
 | Hermes skill name | `humanize-korean` |
 | Repository | `andrea9292/im-not-ai-hermes` |
 | Package path | `skills/humanize-korean/` |
-| Hermes port version | `2.2.0-hermes.1` |
+| Hermes port version | `2.3.2-hermes.1` |
 | Original project | `epoko77-ai/im-not-ai` |
-| Original baseline | v2.2.0, upstream commit `3120cb81`까지 반영 |
+| Original baseline | v2.3.2, upstream commit `bad4ef0a`까지 반영 |
 | License | MIT |
 | Distribution | Hermes tap-friendly skill source |
 
@@ -30,15 +30,15 @@
 이 포트의 버전은 원본 버전과 Hermes 포트 패치 번호를 함께 표기합니다.
 
 ```text
-2.2.0-hermes.1
+2.3.2-hermes.1
 ```
 
 이 버전 표기의 의미는 다음과 같습니다.
 
-- `2.2.0`: 원본 `epoko77-ai/im-not-ai`의 v2.2.0 taxonomy, route-aware workflow, 결정적 검증 도구를 기준으로 합니다.
-- `hermes.1`: v2.2.0을 Hermes Agent용 설치 구조, frontmatter, 작업 지시, 경로 처리, tap 배포 방식으로 옮긴 첫 포트입니다.
+- `2.3.2`: 원본 `epoko77-ai/im-not-ai`의 v2.3.2를 기준으로 합니다. v2.3.0 taxonomy·route-aware workflow·구조 수렴 게이트를 유지하면서 v2.3.1~v2.3.2의 실행 경로, 보존 계약, 설치 경계 수정까지 반영합니다.
+- `hermes.1`: v2.3.2의 Hermes 관련 변경을 `delegate_task`, 설치형 skill package, 부모 검증 방식에 맞게 이식한 첫 번째 포트 패치입니다.
 
-원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.3.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
+원본이 새 버전으로 올라가면 원본 변경분을 검토한 뒤 `2.4.0-hermes.1`처럼 원본 버전과 Hermes 포트 번호를 함께 갱신합니다.
 
 ## 왜 한국어 특화인가
 
@@ -69,15 +69,24 @@
 ```text
 skills/humanize-korean/SKILL.md                         # Hermes 스킬 진입점
 skills/humanize-korean/references/quick-rules.md        # 빠른 윤문용 핵심 규칙
+skills/humanize-korean/references/diagnosis-rules.md    # 진단 전용 슬림 인덱스
 skills/humanize-korean/references/ai-tell-taxonomy.md   # 전체 분류 체계
 skills/humanize-korean/references/rewriting-playbook.md # 카테고리별 윤문 처방
 skills/humanize-korean/references/scholarship.md        # 번역투·후편집투 관련 근거 메모
+skills/humanize-korean/references/runtime-agents/       # Hermes용 진단·윤문·finalize 역할 계약
 skills/humanize-korean/references/metrics.py            # v1.6 계열 정량 지표 보조 도구
 skills/humanize-korean/references/metrics_v2.py         # v2.0 후편집투·간섭 지표 보조 도구
 skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·청킹 준비
+skills/humanize-korean/scripts/sanitize_text.py         # NFD·비가시 문자·줄바꿈 입력 위생 처리
+skills/humanize-korean/scripts/console.py               # Windows cp949 콘솔 출력·게이트 종료 코드 보호
 skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
-skills/humanize-korean/scripts/verify_change_rate.py    # 결정적 변경률 게이트
+skills/humanize-korean/scripts/build_diagnosis_rules.py # taxonomy 기반 진단 인덱스 생성
+skills/humanize-korean/scripts/verify_gates.py          # 4축 구조 수렴 게이트
+skills/humanize-korean/scripts/verify_change_rate.py    # 하위 호환 문자율 게이트
 skills/humanize-korean/scripts/reassemble_chunks.py     # 손실 없는 청크 재조립
+skills/humanize-korean/scripts/validate_stage_artifacts.py # 단계 산출물·표면 보존 검증
+skills/humanize-korean/scripts/update_execution_state.py # Hermes 역할 완료 provenance
+skills/humanize-korean/scripts/check_package_contents.py # 릴리즈 후보 필수 파일 검사
 skills/humanize-korean/tests/                           # 지표·경로·청킹·골든 회귀 테스트
 ```
 
@@ -149,17 +158,17 @@ humanize-korean으로 이 글의 번역투와 기계적으로 느껴지는 표�
 
 ## 세 가지 경로
 
-v2.2 포트는 `route_hint`와 사용자 요청에 따라 작업 강도를 나눕니다.
+v2.3 포트는 `route_hint`와 사용자 요청에 따라 작업 강도를 나눕니다.
 
 | 경로 | 기본 처리 | 대상 |
 |---|---|---|
-| `light` | 보수 윤문 1회 | 이미 잘 쓴 글, 기계적 신호가 적은 글 |
-| `standard` | 지배 패턴 진단 후 겨냥 윤문 | 보통의 AI 초안과 혼합형 글 |
-| `heavy` | 진단, 윤문, 변경률 게이트, 의미 보존 감사 | 중증 패턴, 15,000자 초과, 정밀 요청, 검증 증적이 필요한 글 |
+| `light` | monolith subagent 1회 | 이미 잘 쓴 글, 기계적 신호가 적은 글 |
+| `standard` | diagnostician → monolith subagent | 보통의 AI 초안과 혼합형 글 |
+| `heavy` | diagnostician → monolith/필요 시 청크 병렬 → finalizer subagent | 중증 패턴, 정밀 요청, 검증 증적이 필요한 글 |
 
-15,000자 이하에서는 입력 길이만으로 heavy 경로를 강제하지 않습니다. 1만 자 안팎의 글도 기본적으로 한 번에 처리합니다. 15,000자를 넘으면 upstream 계약에 따라 heavy를 권고하지만, 이 경우에도 shim이 실제 body chunk를 2개 이상 만들 때만 청크별 윤문과 재조립을 사용합니다.
+입력 길이만으로 경로를 바꾸지 않습니다. `strict`는 fresh-context 3역할을 강제하지만 청킹을 강제하지 않습니다. Heavy에서도 단일 child가 안정적으로 처리하기 어려운 장문이거나 사용자가 청킹을 요청한 경우에만 `--chunk`를 쓰며, 실제 body chunk가 2개 이상일 때만 청크별 윤문과 재조립을 사용합니다.
 
-Hermes에서는 원본의 Claude Code agent runtime을 실행하지 않습니다. Main Hermes agent가 세 경로를 직접 수행하고, 필요할 때만 `delegate_task`로 검토를 분리합니다. 최종 판단과 파일 검증은 main agent가 맡습니다.
+Hermes에서는 원본의 Claude Code agent 등록 방식과 `model: opus` 라우팅을 실행하지 않습니다. 대신 upstream의 런타임 3역할을 `references/runtime-agents/`의 역할 계약과 Hermes `delegate_task`로 보존합니다. 경로별 subagent 호출은 실행 계약이며, main agent는 오케스트레이션·결정적 스크립트·산출물 검증·최종 채택을 맡습니다.
 
 ## 산출물 기대값
 
@@ -172,19 +181,35 @@ Hermes에서는 원본의 Claude Code agent runtime을 실행하지 않습니다
 파일 작업에서는 원본을 보존하고 별도 출력 파일을 만드는 방식을 선호합니다. 필요할 경우 `final.md` 끝에 다음과 같은 숨은 요약 블록을 둘 수 있습니다.
 
 ```html
-<!-- HUMANIZE-SUMMARY
+<!-- HUMANIZE-SUMMARY v2.3
+run_id: ...
 metrics:
-  change_rate: ...
+  char_in: ...
+  char_out: ...
+  change_rate_claim: ...
+  change_rate_actual: ...
+  gate_exit: 0|1|2
   grade: A|B|C|D
-  categories: [A-7, C-11, D-1]
+categories:
+  - id: C-11
+    before: ...
+    after: ...
 self_check:
   preserved_names_numbers_quotes: pass
   genre_register: pass
   over_polish: pass
-notes:
-  - ...
 -->
 ```
+
+`change_rate_actual`과 통합 `gate_exit`은 child가 확정하지 않고, 부모가 `verify_gates.py --stamp-summary`로 기록합니다. `gate_exit`은 문자율뿐 아니라 S1 목표 달성, C-8 전멸, golden/수치 주입 검사까지 반영합니다.
+
+`heavy` 또는 `--strict` 파일 작업은 `00_execution.json`, `00_metrics.json` 또는 `00_metrics.error`, `01_input.txt`, `02_diagnosis.md`, `final_pre_finalize.md`, `final.md`, `09_finalize.json`이 모두 존재하고 단계 검증기를 통과해야 완료로 봅니다. 여러 body chunk를 사용했다면 `chunk_manifest.json`, manifest가 지정한 청크 윤문본, `03_reassembly_report.json`도 필요합니다. 결정적 validator는 파일·스키마와 구조·수치·인용·코드·각주의 표면 보존을 검사하며, 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조합니다. `delegate_task`를 사용할 수 없는 환경에서 main agent가 대신 처리했다면 이를 upstream-equivalent strict라고 부르지 않고 degraded fallback으로 명시합니다.
+
+## 입력 위생 처리
+
+`prepare_monolith_input.py`는 metrics·route·청크 해시를 계산하기 전에 실행 디렉터리의 `01_input.txt`를 같은 기준선으로 정리합니다. 기본 처리는 한글 NFD→NFC 결합, 제로폭·BOM·소프트하이픈·bidi·태그 제어문자 제거, NBSP 계열 공백과 줄바꿈·줄 끝 공백 정리입니다. 이모지 결합자, 전각공백, 반복 빈 줄은 기본적으로 보존합니다.
+
+실제로 바뀐 경우에만 `00_sanitize.json` 보고서를 남깁니다. 원문 바이트를 그대로 유지해야 하면 `--no-sanitize`를 사용합니다. 이 기능은 맞춤법 교정이나 AI 워터마크 제거가 아니라, 눈에 보이지 않는 문자 차이 때문에 검색·글자수·변경률 게이트가 어긋나는 것을 막는 결정적 전처리입니다.
 
 ## 선택 지표
 
@@ -196,7 +221,8 @@ notes:
 SKILL_ROOT="$PWD/skills/humanize-korean"
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" --text "분석할 한국어 원문" --genre essay
 python "$SKILL_ROOT/references/metrics_v2.py" --input _workspace/2026-05-25-001/01_input.txt --genre essay --output _workspace/2026-05-25-001/00_metrics_v2.json
-python "$SKILL_ROOT/scripts/verify_change_rate.py" --before 원문.md --after 윤문본.md
+python "$SKILL_ROOT/scripts/verify_gates.py" --before 원문.md --after 윤문본.md --stamp-summary
+python "$SKILL_ROOT/scripts/validate_stage_artifacts.py" --run-dir _workspace/2026-05-25-001 --stage all --strict
 ```
 
 상대 입력·출력 경로와 자동 `_workspace/`는 현재 작업 디렉터리를 기준으로
@@ -228,9 +254,10 @@ python "$SKILL_ROOT/scripts/verify_change_rate.py" --before 원문.md --after �
 
 이 Hermes 포트는 taxonomy, quick rules, rewriting playbook, metrics, scholarship reference를 보존하되, Claude Code 전용 실행 개념을 Hermes 스킬 구조에 맞게 조정합니다.
 
-- `Agent`, `TeamCreate`, `TeamDelete`를 사용하지 않습니다.
+- Claude Code의 `Agent`, `TeamCreate`, `TeamDelete`를 직접 사용하지 않습니다.
 - `/humanize`, `/humanize-redo` 같은 Claude Code slash command를 제공하지 않습니다.
-- Hermes의 `skill_view`, file tools, terminal tools, 선택적 `delegate_task`에 맞게 설명합니다.
+- upstream 런타임 역할은 Hermes `delegate_task`와 패키지된 역할 계약으로 변환합니다.
+- subagent의 파일 작성 주장은 main agent가 read-back과 결정적 검증기로 확인합니다.
 - 설치 경로는 Hermes tap-friendly 구조인 `skills/humanize-korean/`를 사용합니다.
 
 자세한 출처와 파일 매핑은 [`SOURCE.md`](./SOURCE.md)를 참고합니다.

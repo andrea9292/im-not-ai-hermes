@@ -27,7 +27,9 @@ CLI:
 from __future__ import annotations
 
 import argparse
+import json
 import os
+from pathlib import Path
 import re
 import sys
 
@@ -41,6 +43,10 @@ import metrics_v2 as _m  # noqa: E402  (sys.path mutation is intentional)
 
 # final.md 본문 끝의 메타데이터 주석 블록. 여는 마커부터 파일 끝까지.
 _SUMMARY_BLOCK_RE = re.compile(r"<!--\s*HUMANIZE-SUMMARY\b.*", re.DOTALL)
+_SUMMARY_TAIL_RE = re.compile(
+    r"<!--\s*HUMANIZE-SUMMARY\b(?P<body>.*?)-->\s*\Z",
+    re.DOTALL,
+)
 
 
 def strip_summary_block(text: str) -> str:
@@ -56,6 +62,52 @@ def _read(path: str) -> str:
         return f.read()
 
 
+def _atomic_text(path: Path, text: str) -> None:
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
+
+
+def stamp_summary(path: str, pct: float, code: int, scope: str) -> None:
+    target = Path(path)
+    text = target.read_text(encoding="utf-8")
+    match = _SUMMARY_TAIL_RE.search(text)
+    if match is None:
+        raise ValueError("완결된 말미 HUMANIZE-SUMMARY 블록이 없습니다")
+    body = match.group("body")
+    values = {
+        "change_rate_actual": f"{pct:.1f}%",
+        "gate_exit": str(code),
+        "change_rate_scope": scope,
+    }
+    for key, value in values.items():
+        pattern = re.compile(rf"(?m)^\s{{2}}{re.escape(key)}:\s*.*$")
+        replacement = f"  {key}: {value}"
+        if pattern.search(body):
+            body = pattern.sub(replacement, body, count=1)
+        else:
+            metrics = re.search(r"(?m)^metrics:\s*$", body)
+            if metrics is None:
+                raise ValueError("HUMANIZE-SUMMARY에 metrics 섹션이 없습니다")
+            insert_at = metrics.end()
+            body = body[:insert_at] + "\n" + replacement + body[insert_at:]
+    stamped = text[: match.start("body")] + body + text[match.end("body") :]
+    _atomic_text(target, stamped)
+
+
+def stamp_execution_state(path: str, pct: float, code: int, scope: str) -> None:
+    target = Path(path)
+    payload = json.loads(target.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("execution state 최상위 값이 object가 아닙니다")
+    payload["change_rate"] = {
+        "percent": round(pct, 3),
+        "exit_code": code,
+        "scope": scope,
+    }
+    _atomic_text(target, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="철칙 #4 변경률 게이트")
     p.add_argument("--before", required=True, help="원문 경로 (01_input.txt)")
@@ -65,6 +117,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="마크업 줄·줄머리 장식을 제외하고 본문만 비교 "
         "(헤딩·불릿 산문화가 변경률을 부풀리는 경우)",
+    )
+    p.add_argument(
+        "--stamp-summary",
+        action="store_true",
+        help="계산값을 --after 파일의 HUMANIZE-SUMMARY에 기록",
+    )
+    p.add_argument(
+        "--execution-state",
+        help="계산값을 기록할 00_execution.json 경로",
     )
     args = p.parse_args(argv)
 
@@ -87,6 +148,15 @@ def main(argv: list[str] | None = None) -> int:
         verdict, code = "OK — 수렴", 0
 
     scope = "본문만 (마크업 제외)" if args.ignore_markup else "전문"
+    scope_key = "body" if args.ignore_markup else "full"
+    try:
+        if args.stamp_summary:
+            stamp_summary(args.after, pct, code, scope_key)
+        if args.execution_state:
+            stamp_execution_state(args.execution_state, pct, code, scope_key)
+    except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: 게이트 결과 기록 실패: {exc}", file=sys.stderr)
+        return 3
     print(f"change_rate: {pct:.1f}%  [{scope}]")
     print(
         f"gate: {verdict}  "
@@ -96,4 +166,6 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import console as _console
+
+    sys.exit(_console.run_gate(main))

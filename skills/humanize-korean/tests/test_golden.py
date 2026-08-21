@@ -10,7 +10,7 @@ suite validates the deterministic scorer itself, both directions:
                 failure codes declared in expected_failures.json
 
 To gate a real pipeline run, feed the actual rewrite of input.txt through
-tests/golden/checks.py (see tests/golden/README.md).
+scripts/golden_checks.py (see tests/golden/README.md).
 """
 
 from __future__ import annotations
@@ -21,11 +21,13 @@ import sys
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(HERE, ".."))
 GOLDEN_DIR = os.path.join(HERE, "golden")
 FIXTURES_DIR = os.path.join(GOLDEN_DIR, "fixtures")
-sys.path.insert(0, GOLDEN_DIR)
+SCRIPTS_DIR = os.path.join(PROJECT_ROOT, "scripts")
+sys.path.insert(0, SCRIPTS_DIR)
 
-import checks  # noqa: E402
+import golden_checks as checks  # pyright: ignore[reportMissingImports]  # noqa: E402
 
 
 def _read(path: str) -> str:
@@ -208,6 +210,68 @@ class StructureCheckTests(unittest.TestCase):
         orig = '그는 "결과를 신중히 해석해야 한다"고 말했다.'
         out = '"결과를 신중히 해석해야 한다"는 것이 그의 말이다.'
         self.assertEqual(checks.check_quotes(orig, out), [])
+
+
+class NumberCheckTests(unittest.TestCase):
+    """수치 주입/삭제 방향성 게이트 — check_numbers."""
+
+    def test_number_injected_detected(self) -> None:
+        orig = "매출이 크게 늘었다."
+        out = "매출이 14개월 만에 75배 늘었다."
+        codes = {x.code for x in checks.check_numbers(orig, out)}
+        self.assertIn("number_injected", codes)
+
+    def test_numbers_preserved_passes(self) -> None:
+        orig = "성장률은 3.1%였다. 비용은 0.00001달러다. 14개월 걸렸다."
+        out = "성장률은 3.1%를 기록했다. 14개월이 걸렸고 비용은 0.00001달러다."
+        self.assertEqual(checks.check_numbers(orig, out), [])
+
+    def test_number_dropped_is_not_a_gate(self) -> None:
+        orig = "성장률은 3.1%였다. 물가는 2.4% 올랐다."
+        out = "성장률은 3.1%였다."
+        self.assertEqual(checks.check_numbers(orig, out), [])
+        self.assertEqual(checks.run_checks(orig, out), [])
+        self.assertEqual(checks.dropped_numbers(orig, out), ["2.4"])
+
+    def test_dropped_numbers_empty_when_preserved(self) -> None:
+        orig = "성장률은 3.1%였다."
+        out = "성장률은 3.1%를 기록했다."
+        self.assertEqual(checks.dropped_numbers(orig, out), [])
+
+    def test_korean_unit_man_equivalence(self) -> None:
+        orig = "이용자는 1만 명이다."
+        out = "이용자는 10,000 명이다."
+        self.assertEqual(checks.check_numbers(orig, out), [])
+        self.assertEqual(checks.dropped_numbers(orig, out), [])
+        self.assertEqual(checks.check_numbers(out, orig), [])
+        self.assertEqual(checks.dropped_numbers(out, orig), [])
+
+    def test_korean_unit_eok_equivalence(self) -> None:
+        orig = "예산은 1억 원이다."
+        out = "예산은 100,000,000 원이다."
+        self.assertEqual(checks.check_numbers(orig, out), [])
+        self.assertEqual(checks.dropped_numbers(orig, out), [])
+
+    def test_korean_unit_only_when_attached(self) -> None:
+        vals = checks._number_values("5 만 명")
+        self.assertIn("5", vals)
+        self.assertNotIn("50000", vals)
+
+    def test_comma_thousands_normalized(self) -> None:
+        orig = "예산은 10,000억 원이다."
+        out = "예산은 10000억 원이다."
+        self.assertEqual(checks.check_numbers(orig, out), [])
+
+    def test_repetition_change_not_flagged(self) -> None:
+        orig = "1. 서론\n1) 각주가 아니라 목록.\n결과는 1건이다."
+        out = "결과는 1건이다."
+        codes = {x.code for x in checks.check_numbers(orig, out)}
+        self.assertNotIn("number_injected", codes)
+        self.assertNotIn("number_dropped", codes)
+
+    def test_run_checks_includes_numbers(self) -> None:
+        fails = checks.run_checks("보고서다.", "보고서는 2024년에 나왔다.")
+        self.assertIn("number_injected", {x.code for x in fails})
 
 
 class EdgeCaseTests(unittest.TestCase):

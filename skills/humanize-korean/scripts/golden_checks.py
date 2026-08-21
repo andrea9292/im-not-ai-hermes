@@ -8,13 +8,13 @@ documented failure modes fail.
 
 stdlib only. Usage as a library:
 
-    from checks import run_checks
+    from golden_checks import run_checks
     failures = run_checks(original_text, rewritten_text)
     # empty list == PASS
 
 or from the CLI:
 
-    python3 checks.py input.txt output.txt
+    python3 scripts/golden_checks.py input.txt output.txt
 
 Failure codes (stable API — tests and fixtures reference these):
     empty_output       output is blank
@@ -29,6 +29,12 @@ Failure codes (stable API — tests and fixtures reference these):
     footnote_anchor    a footnote marker moved to a different sentence
                        (detected via the nearest preceding number token)
     quote_altered      a direct quote is no longer verbatim
+    number_injected    a numeric value appears in the output that never
+                       occurred in the original (수치 주입)
+
+Advisory (NOT a failure code): 원문 수치의 소실은 문장 병합·표기 통합의
+정상 부산물일 수 있어 게이트하지 않는다. `dropped_numbers()`가 소실 값
+목록을 반환하며, verify_gates.py가 리포트 전용 축(P4)에서 관측만 한다.
 """
 
 from __future__ import annotations
@@ -280,6 +286,55 @@ def check_footnotes(original: str, output: str) -> list[Failure]:
 
 
 # ===========================================================================
+# Number fidelity — 수치는 철칙상 불변. 주입만 FAIL (방향성 게이트).
+# 삭제는 재구성 부산물일 수 있어 advisory(dropped_numbers)로만 관측.
+# ===========================================================================
+
+_KO_UNIT_MULT = {
+    "백": 100,
+    "천": 1_000,
+    "만": 10_000,
+    "억": 100_000_000,
+    "조": 1_000_000_000_000,
+}
+
+
+def _number_values(text: str) -> set[str]:
+    """Canonical set of numeric VALUES in text."""
+    values: set[str] = set()
+    for m in _NUM_TOKEN.finditer(text):
+        tok = m.group(0).replace(",", "")
+        mult = _KO_UNIT_MULT.get(text[m.end():m.end() + 1])
+        if mult:
+            try:
+                val = float(tok) * mult
+                values.add(str(int(val)) if val == int(val) else str(val))
+                continue
+            except ValueError:
+                pass
+        values.add(tok)
+    return values
+
+
+def dropped_numbers(original: str, output: str) -> list[str]:
+    """원문에는 있는데 윤문본에서 사라진 수치 값 목록 (advisory 전용)."""
+    return sorted(_number_values(original) - _number_values(output))
+
+
+def check_numbers(original: str, output: str) -> list[Failure]:
+    """수치 주입 방향성 게이트 — 주입(number_injected)만 FAIL."""
+    fails: list[Failure] = []
+    injected = sorted(_number_values(output) - _number_values(original))
+    if injected:
+        fails.append(Failure(
+            "number_injected",
+            f"원문에 없던 수치가 윤문본에 등장했습니다: {injected} "
+            f"(수치 불변 철칙 — 없던 주장 주입 위험)",
+        ))
+    return fails
+
+
+# ===========================================================================
 # Quote fidelity — direct quotes are immutable under the iron rules
 # ===========================================================================
 
@@ -335,12 +390,16 @@ def run_checks(original: str, output: str) -> list[Failure]:
     fails += check_headings(original, output)
     fails += check_footnotes(original, output)
     fails += check_quotes(original, output)
+    fails += check_numbers(original, output)
     return fails
 
 
 def main(argv: list[str]) -> int:
     if len(argv) != 3:
-        print("usage: python3 checks.py <original.txt> <rewritten.txt>", file=sys.stderr)
+        print(
+            "usage: python3 scripts/golden_checks.py <original.txt> <rewritten.txt>",
+            file=sys.stderr,
+        )
         return 2
     with open(argv[1], encoding="utf-8") as f:
         original = f.read()
@@ -356,4 +415,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    import console as _console
+
+    _console.force_utf8_console()
     raise SystemExit(main(sys.argv))

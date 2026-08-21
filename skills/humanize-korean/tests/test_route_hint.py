@@ -121,10 +121,16 @@ class RouteHintTests(unittest.TestCase):
         obj = _metrics_stub(risk_band="high", pivots=4, double_passive=3)
         self.assertEqual(PREP.compute_route_hint(obj)["route_hint"], "standard")
 
-    def test_very_long_text_is_heavy_regardless(self) -> None:
+    def test_very_long_text_does_not_change_low_risk_route(self) -> None:
         obj = _metrics_stub(risk_band="low", char_count=22000)
         out = PREP.compute_route_hint(obj)
-        self.assertEqual(out["route_hint"], "heavy")
+        self.assertEqual(out["route_hint"], "light")
+
+    def test_very_long_text_does_not_change_standard_route(self) -> None:
+        obj = _metrics_stub(
+            risk_band="high", char_count=22000, pivots=4, double_passive=3
+        )
+        self.assertEqual(PREP.compute_route_hint(obj)["route_hint"], "standard")
 
     def test_partial_metrics_degrade_to_standard(self) -> None:
         """키 누락·빈 입력에도 죽지 않고 보수적으로 standard."""
@@ -159,6 +165,31 @@ class RouteHintTests(unittest.TestCase):
 
 
 class RouteHintCliTests(unittest.TestCase):
+    def test_missing_run_dir_does_not_create_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "missing-run")
+            with self.assertRaisesRegex(SystemExit, "run-dir not found"):
+                PREP.main(["--run-dir", run_dir])
+            self.assertFalse(os.path.exists(run_dir))
+
+    def test_missing_chunk_run_dir_does_not_create_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "missing-run")
+            with self.assertRaisesRegex(SystemExit, "run-dir not found"):
+                PREP.main(["--chunk", "--run-dir", run_dir])
+            self.assertFalse(os.path.exists(run_dir))
+
+    def test_text_may_create_explicit_run_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "new-run")
+            self.assertEqual(
+                PREP.main(["--run-dir", run_dir, "--text", "새 입력이다."]),
+                0,
+            )
+            self.assertTrue(os.path.isdir(run_dir))
+            with open(os.path.join(run_dir, "01_input.txt"), encoding="utf-8") as f:
+                self.assertEqual(f.read(), "새 입력이다.")
+
     @unittest.skipUnless(PREP._metrics_mod is not None, "metrics 모듈 없음")
     def test_single_mode_writes_route_hint(self) -> None:
         text = (

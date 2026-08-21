@@ -8,6 +8,7 @@
 - public skill에는 개인 문체, 기관별 house style, 비공개 프로젝트 어휘를 넣지 않습니다.
 - “공개 의무를 피하는 도구”가 아니라 “한국어 글쓰기 품질 개선 도구”로 설명합니다.
 - 원본 Claude Code 구조를 Hermes runtime으로 오해하게 만들지 않습니다.
+- 원본의 역할 분리는 Hermes `delegate_task`와 참조 프롬프트로 옮기되 Claude 전용 agent 등록·모델 라우팅은 복제하지 않습니다.
 - 변경 후에는 README, SOURCE, RELEASE_NOTES, NOTICE의 정합성을 확인합니다.
 
 ## 2. 새 원본 버전 반영 절차
@@ -20,6 +21,7 @@
    - scholarship reference
    - metrics/baseline
    - scripts/tests
+   - runtime agent role contracts
    - README 또는 운영 정책
 3. Hermes 포트에 필요한 파일만 반영합니다.
 4. Claude Code 전용 요소는 Hermes workflow에 맞게 조정하거나 제외합니다.
@@ -62,11 +64,20 @@ PY
 ```bash
 python3 -m pytest skills/humanize-korean/tests -q
 python3 skills/humanize-korean/scripts/build_quick_rules.py --check
+python3 skills/humanize-korean/scripts/build_diagnosis_rules.py --check
+python3 skills/humanize-korean/scripts/check_package_contents.py
+```
+
+새 runtime role을 바꾸면 `test_validate_stage_artifacts.py`의 orchestration 계약과 prompt 패키징 검사를 함께 갱신합니다. strict 실행 결과는 다음 명령으로 별도 확인합니다.
+
+```bash
+python3 skills/humanize-korean/scripts/validate_stage_artifacts.py \
+  --run-dir <run-dir> --stage all --strict
 ```
 
 ### CI 확인
 
-GitHub Actions는 Python 3.11·3.12에서 전체 테스트와 quick-rules 동기화를 검사합니다.
+GitHub Actions는 Python 3.11·3.12에서 전체 테스트, quick-rules·diagnosis-rules 동기화, package contents와 compile 검사를 수행합니다.
 
 ### Hermes inspect 확인
 
@@ -74,19 +85,19 @@ GitHub Actions는 Python 3.11·3.12에서 전체 테스트와 quick-rules 동기
 hermes skills inspect andrea9292/im-not-ai-hermes/skills/humanize-korean
 ```
 
-### 임시 HERMES_HOME 설치 테스트
+### 후보 working tree 임시 설치 테스트
 
 ```bash
-tmp="$HOME/.cache/im-not-ai-hermes-install-test-$$"
-rm -rf "$tmp"
-mkdir -p "$tmp"
-HERMES_HOME="$tmp" hermes skills tap add andrea9292/im-not-ai-hermes
-HERMES_HOME="$tmp" hermes skills install andrea9292/im-not-ai-hermes/skills/humanize-korean --category writing --yes
-find "$tmp/skills/writing/humanize-korean" -maxdepth 3 -type f | sort
+tmp=$(mktemp -d)
+mkdir -p "$tmp/skills/writing"
+cp -R skills/humanize-korean "$tmp/skills/writing/humanize-korean"
+python3 "$tmp/skills/writing/humanize-korean/scripts/check_package_contents.py"
+HERMES_HOME="$tmp" hermes skills list --source local | tee "$tmp/skills-list.txt"
+python3 -c 'from pathlib import Path; import sys; text=Path(sys.argv[1]).read_text(); assert "humanize-korean" in text, text' "$tmp/skills-list.txt"
 rm -rf "$tmp"
 ```
 
-macOS의 `/var`와 `/private/var` symlink 정규화 때문에 `mktemp` 아래 임시 홈에서는 Hermes installer의 path 검증이 경고를 낼 수 있습니다. 이 경우 `$HOME/.cache`처럼 사용자 홈 아래의 실제 경로를 사용합니다.
+이 절차는 아직 공개되지 않은 candidate working tree 자체를 검사합니다. GitHub tap을 다시 설치하면 공개 `main`만 검증하게 되므로 릴리즈 후보 파일 누락을 잡을 수 없습니다. `hermes skills inspect`는 현재 로컬 절대 경로를 source identifier로 받지 않으므로, 공식 수동 설치 구조와 `skills list --source local` discovery를 사용합니다.
 
 ## 4. 공개 전 문구 점검
 

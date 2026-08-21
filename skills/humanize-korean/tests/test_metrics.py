@@ -32,7 +32,7 @@ class MetricsTests(unittest.TestCase):
     def test_default_baseline_path_exists(self) -> None:
         path = metrics._default_baseline_path()
         self.assertTrue(os.path.exists(path), f"bundled baseline missing: {path}")
-        self.assertEqual(os.path.abspath(path), os.path.abspath(BASELINE_PATH))
+        self.assertEqual(os.path.realpath(path), os.path.realpath(BASELINE_PATH))
 
     def test_compute_all_works_without_explicit_baseline(self) -> None:
         result = metrics.compute_all("오늘은 좋은 날이다.", genre="essay")
