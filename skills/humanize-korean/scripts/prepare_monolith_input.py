@@ -52,7 +52,9 @@ HERE = Path(__file__).resolve().parent
 SKILL_ROOT = HERE.parent
 METRICS_DIR = SKILL_ROOT / "references"
 
-# Make metrics.py importable without polluting global state.
+# Make sibling runtime helpers and packaged metrics importable when this module
+# is executed as a script or loaded through importlib in tests.
+sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(METRICS_DIR))
 # v2.0 우선 import — compute_all 별칭으로 v1.6 호환. metrics_v2 부재·로드 실패 시
 # v1.6 metrics fallback. graceful degrade로 Hermes workflow 동작은 항상 보장.
@@ -63,6 +65,11 @@ except Exception:  # pragma: no cover
         import metrics as _metrics_mod  # type: ignore  # v1.6 fallback
     except Exception:
         _metrics_mod = None
+
+try:
+    import sanitize_text as _sanitize_mod  # type: ignore
+except Exception:  # pragma: no cover - package checks require this runtime file.
+    _sanitize_mod = None
 
 
 # ---------------------------------------------------------------------------
@@ -95,6 +102,30 @@ def _resolve_run_dir(run_dir_arg: str | None, text_arg: str | None) -> Path:
     rd = _next_run_dir(workspace)
     rd.mkdir(parents=True, exist_ok=True)
     return rd
+
+
+def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
+    """Read the run input and apply deterministic text hygiene when enabled."""
+    report_path = run_dir / "00_sanitize.json"
+    if report_path.exists():
+        report_path.unlink()
+    with input_path.open("r", encoding="utf-8", newline="") as stream:
+        text = stream.read()
+    if not enabled or _sanitize_mod is None:
+        return text
+    try:
+        cleaned, report = _sanitize_mod.sanitize(text)
+    except Exception:  # noqa: BLE001 - preserve the existing graceful fallback.
+        return text
+    if not report.changed:
+        return text
+    input_path.write_text(cleaned, encoding="utf-8", newline="")
+    report_path.write_text(
+        json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    print(f"sanitize={report.summary}")
+    return cleaned
 
 
 # ---------------------------------------------------------------------------
@@ -626,7 +657,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
         input_path.write_text(args.text, encoding="utf-8")
     if not input_path.exists():
         raise SystemExit(f"01_input.txt not found in {run_dir}; pass --text to create")
-    text = input_path.read_text(encoding="utf-8")
+    text = _load_input(input_path, run_dir, not args.no_sanitize)
     if not text.strip():
         raise SystemExit("01_input.txt is empty; nothing to chunk")
 
@@ -776,6 +807,12 @@ def main(argv: list[str] | None = None) -> int:
         help="장문 청킹 모드: 01_input.txt 를 손실 없이 분할해 청크별 "
         "input_with_metrics 파일과 chunk_manifest.json 을 만든다.",
     )
+    p.add_argument(
+        "--no-sanitize",
+        action="store_true",
+        help="텍스트 위생 처리를 끈다. 기본은 NFD→NFC, 비가시 문자·특수공백·줄바꿈 "
+        "정리를 01_input.txt 기준선에 반영한다. AI 워터마크 제거와 무관하다.",
+    )
     args = p.parse_args(argv)
 
     diagnosis: str | None = None
@@ -799,7 +836,7 @@ def main(argv: list[str] | None = None) -> int:
     if not input_path.exists():
         raise SystemExit(f"01_input.txt not found in {run_dir}; pass --text to create")
 
-    text = input_path.read_text(encoding="utf-8")
+    text = _load_input(input_path, run_dir, not args.no_sanitize)
     removed = _remove_stale_chunk_artifacts(run_dir)
 
     metrics_obj: dict | None = None

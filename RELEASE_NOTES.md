@@ -6,6 +6,7 @@
 
 - upstream `v2.3.1`에서 확정된 이슈 #54 계약을 선택적으로 백포트했습니다. Light가 finalizer로 승급해도 diagnostician 콜을 추가하지 않으며, `diagnosis_path` 없이 원문과 윤문본을 직접 대조합니다.
 - upstream `v2.3.1`의 `anchor_ledger` 계약을 선택적으로 백포트했습니다. monolith가 편집 전에 문장별 핵심 내용 명사·개념어를 원형으로 기록하고, 앵커가 사라지는 edit을 롤백하며, finalizer가 원문과 직접 대조해 누락을 복원합니다.
+- upstream `v2.3.1`의 입력 위생 처리를 선택적으로 백포트했습니다. metrics·route·청크 해시 전에 NFD 한글과 비가시 제어문자·특수공백·줄바꿈을 정리하고, 변경 시 `00_sanitize.json`을 남기며, `--no-sanitize`로 비활성화할 수 있습니다. 전각공백과 반복 빈 줄은 기본 보존합니다.
 
 ## 2.3.0-hermes.1 (2026-08-02)
 

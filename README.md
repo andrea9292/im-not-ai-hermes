@@ -77,6 +77,7 @@ skills/humanize-korean/references/runtime-agents/       # Hermes용 진단·윤�
 skills/humanize-korean/references/metrics.py            # v1.6 계열 정량 지표 보조 도구
 skills/humanize-korean/references/metrics_v2.py         # v2.0 후편집투·간섭 지표 보조 도구
 skills/humanize-korean/scripts/prepare_monolith_input.py# metrics·route_hint·청킹 준비
+skills/humanize-korean/scripts/sanitize_text.py         # NFD·비가시 문자·줄바꿈 입력 위생 처리
 skills/humanize-korean/scripts/build_quick_rules.py     # taxonomy 기반 quick rules 생성
 skills/humanize-korean/scripts/build_diagnosis_rules.py # taxonomy 기반 진단 인덱스 생성
 skills/humanize-korean/scripts/verify_gates.py          # 4축 구조 수렴 게이트
@@ -202,6 +203,12 @@ self_check:
 `change_rate_actual`과 통합 `gate_exit`은 child가 확정하지 않고, 부모가 `verify_gates.py --stamp-summary`로 기록합니다. `gate_exit`은 문자율뿐 아니라 S1 목표 달성, C-8 전멸, golden/수치 주입 검사까지 반영합니다.
 
 `heavy` 또는 `--strict` 파일 작업은 `00_execution.json`, `00_metrics.json` 또는 `00_metrics.error`, `01_input.txt`, `02_diagnosis.md`, `final_pre_finalize.md`, `final.md`, `09_finalize.json`이 모두 존재하고 단계 검증기를 통과해야 완료로 봅니다. 여러 body chunk를 사용했다면 `chunk_manifest.json`, manifest가 지정한 청크 윤문본, `03_reassembly_report.json`도 필요합니다. 결정적 validator는 파일·스키마와 구조·수치·인용·코드·각주의 표면 보존을 검사하며, 주체 귀속·범위·판단 강도 같은 의미 보존은 fresh-context finalizer가 원문과 직접 대조합니다. `delegate_task`를 사용할 수 없는 환경에서 main agent가 대신 처리했다면 이를 upstream-equivalent strict라고 부르지 않고 degraded fallback으로 명시합니다.
+
+## 입력 위생 처리
+
+`prepare_monolith_input.py`는 metrics·route·청크 해시를 계산하기 전에 실행 디렉터리의 `01_input.txt`를 같은 기준선으로 정리합니다. 기본 처리는 한글 NFD→NFC 결합, 제로폭·BOM·소프트하이픈·bidi·태그 제어문자 제거, NBSP 계열 공백과 줄바꿈·줄 끝 공백 정리입니다. 이모지 결합자, 전각공백, 반복 빈 줄은 기본적으로 보존합니다.
+
+실제로 바뀐 경우에만 `00_sanitize.json` 보고서를 남깁니다. 원문 바이트를 그대로 유지해야 하면 `--no-sanitize`를 사용합니다. 이 기능은 맞춤법 교정이나 AI 워터마크 제거가 아니라, 눈에 보이지 않는 문자 차이 때문에 검색·글자수·변경률 게이트가 어긋나는 것을 막는 결정적 전처리입니다.
 
 ## 선택 지표
 

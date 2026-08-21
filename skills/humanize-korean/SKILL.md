@@ -39,6 +39,7 @@ This port incorporates upstream changes through v2.3.0 (`82137e85`):
 - v2.3 taxonomy-derived diagnostician index (`diagnosis-rules.md`) plus deterministic generation and drift checks
 - targeted v2.3.1 contract fix for upstream issue #54: a Light escalation may call the finalizer without a diagnosis file
 - targeted v2.3.1 `anchor_ledger` contract: preserve sentence-level content anchors before, during, and after rewriting
+- targeted v2.3.1 input hygiene: normalize NFD Hangul and remove invisible control characters before metrics and rewriting
 
 A-17, inanimate/abstract noun `-들`, remains a hold item in upstream v2.3. Treat it as a metric/scholarship reference, not a default rewrite trigger.
 
@@ -113,6 +114,7 @@ Load the smallest useful reference first.
 - `references/quick-rules.header.md`, `references/quick-rules.footer.md`: Fixed templates used to generate `quick-rules.md`; edit these or the taxonomy, not the generated rule file.
 - `references/design-notes.md`, `references/empirical-validation.md`: v2.3 structural-gate rationale and empirical validation notes.
 - `scripts/prepare_monolith_input.py`: File-workflow helper that computes metrics, emits `route_hint`, and optionally creates lossless chunks.
+- `scripts/sanitize_text.py`: Installed stdlib-only input hygiene for NFC normalization, invisible-control removal, special-space cleanup, and line-ending normalization. It is not an AI-watermark remover.
 - `scripts/build_quick_rules.py`: Rebuilds `quick-rules.md` from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/build_diagnosis_rules.py`: Rebuilds the slim diagnostician index from taxonomy metadata; `--check` verifies that it is current.
 - `scripts/golden_checks.py`: Installed stdlib-only scorer for deterministic register, structure, quotation, footnote, and number-preservation gates.
@@ -169,6 +171,8 @@ SKILL_ROOT="<absolute-installed-skill-directory>"
 python "$SKILL_ROOT/scripts/prepare_monolith_input.py" \
   --run-dir <run-dir> --genre <genre>
 ```
+
+The prep shim sanitizes `01_input.txt` before metrics, routing, or chunk hashes so every later stage uses the same baseline. By default it recomposes NFD Hangul to NFC, removes zero-width/BOM/soft-hyphen/bidi/tag controls, normalizes non-breaking-style spaces and line endings, and strips trailing line whitespace. It preserves emoji joiners, ideographic spaces, and repeated blank lines. When the text changes it writes `00_sanitize.json`; pass `--no-sanitize` to preserve the input byte-for-byte. This is text hygiene, not AI-watermark removal.
 
 `SKILL_ROOT` is the absolute installed package path. Run from the user's working
 directory: relative `--run-dir`, `--diagnosis`, and automatic `_workspace/`
@@ -297,6 +301,7 @@ The prep script writes:
 - `00_metrics.json`
 - `01_input.txt`
 - `01_input_with_metrics.txt`
+- `00_sanitize.json` only when input hygiene changed `01_input.txt`
 - `00_metrics.error` only if metrics fail and the workflow gracefully degrades
 
 For human-facing output, do not dump raw metrics unless requested. Summarize the signals that affected edits.

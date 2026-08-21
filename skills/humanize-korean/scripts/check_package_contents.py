@@ -19,6 +19,7 @@ RUNTIME_REQUIRED = (
     "references/runtime-agents/monolith.md",
     "references/runtime-agents/finalizer.md",
     "scripts/prepare_monolith_input.py",
+    "scripts/sanitize_text.py",
     "scripts/build_diagnosis_rules.py",
     "scripts/golden_checks.py",
     "scripts/verify_gates.py",
@@ -35,6 +36,7 @@ TEST_REQUIRED = (
     "tests/test_verify_gates.py",
     "tests/test_runtime_provenance.py",
     "tests/test_stage_validator_regressions.py",
+    "tests/test_sanitize.py",
 )
 
 SOURCE_REQUIRED = RUNTIME_REQUIRED + TEST_REQUIRED
