@@ -90,11 +90,19 @@ def _next_run_dir(workspace: Path) -> Path:
 
 
 def _resolve_run_dir(run_dir_arg: str | None, text_arg: str | None) -> Path:
+    """Resolve existing runs without creating directories on failed lookup."""
     if run_dir_arg:
         rd = Path(run_dir_arg)
         if not rd.is_absolute():
             rd = Path.cwd() / rd
-        rd.mkdir(parents=True, exist_ok=True)
+        if text_arg is not None:
+            rd.mkdir(parents=True, exist_ok=True)
+        elif not rd.is_dir():
+            raise SystemExit(
+                f"run-dir not found: {rd}\n"
+                "  (relative paths resolve from the current directory; "
+                "pass --text to create a new run.)"
+            )
         return rd
     if text_arg is None:
         raise SystemExit("Either --run-dir or --text is required")

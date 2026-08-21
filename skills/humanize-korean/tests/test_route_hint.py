@@ -165,6 +165,31 @@ class RouteHintTests(unittest.TestCase):
 
 
 class RouteHintCliTests(unittest.TestCase):
+    def test_missing_run_dir_does_not_create_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "missing-run")
+            with self.assertRaisesRegex(SystemExit, "run-dir not found"):
+                PREP.main(["--run-dir", run_dir])
+            self.assertFalse(os.path.exists(run_dir))
+
+    def test_missing_chunk_run_dir_does_not_create_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "missing-run")
+            with self.assertRaisesRegex(SystemExit, "run-dir not found"):
+                PREP.main(["--chunk", "--run-dir", run_dir])
+            self.assertFalse(os.path.exists(run_dir))
+
+    def test_text_may_create_explicit_run_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            run_dir = os.path.join(td, "new-run")
+            self.assertEqual(
+                PREP.main(["--run-dir", run_dir, "--text", "새 입력이다."]),
+                0,
+            )
+            self.assertTrue(os.path.isdir(run_dir))
+            with open(os.path.join(run_dir, "01_input.txt"), encoding="utf-8") as f:
+                self.assertEqual(f.read(), "새 입력이다.")
+
     @unittest.skipUnless(PREP._metrics_mod is not None, "metrics 모듈 없음")
     def test_single_mode_writes_route_hint(self) -> None:
         text = (
