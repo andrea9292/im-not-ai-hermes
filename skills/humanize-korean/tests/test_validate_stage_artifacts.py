@@ -381,6 +381,20 @@ class OrchestrationContractTests(unittest.TestCase):
         self.assertIn("HUMANIZE-SUMMARY v2.3", monolith)
         self.assertIn("verify_gates.py", monolith)
 
+    def test_route_dispatch_uses_absolute_rule_paths(self) -> None:
+        skill = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
+        taxonomy_path = (
+            "taxonomy_path=<absolute-SKILL_ROOT>/references/diagnosis-rules.md"
+        )
+        quick_rules_path = (
+            "quick_rules_path=<absolute-SKILL_ROOT>/references/quick-rules.md"
+        )
+
+        self.assertNotIn("taxonomy_path=references/", skill)
+        self.assertNotIn("quick_rules_path=references/", skill)
+        self.assertIn(taxonomy_path, skill)
+        self.assertGreaterEqual(skill.count(quick_rules_path), 3)
+
     def test_runtime_contracts_preserve_content_anchors(self) -> None:
         contract_paths = (
             SKILL_ROOT / "SKILL.md",

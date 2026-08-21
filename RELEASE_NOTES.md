@@ -9,6 +9,7 @@
 - upstream `v2.3.1`의 입력 위생 처리를 선택적으로 백포트했습니다. metrics·route·청크 해시 전에 NFD 한글과 비가시 제어문자·특수공백·줄바꿈을 정리하고, 변경 시 `00_sanitize.json`을 남기며, `--no-sanitize`로 비활성화할 수 있습니다. 전각공백과 반복 빈 줄은 기본 보존합니다.
 - upstream `v2.3.2`의 Windows 콘솔 하드닝을 선택적으로 백포트했습니다. 패키지 CLI가 stdout·stderr를 UTF-8로 재설정하며, 구조 게이트와 하위 호환 변경률 게이트의 예기치 못한 예외는 경고 exit `1`과 구분되는 실행 오류 exit `3`으로 정규화합니다.
 - 기존 `--run-dir`이 없을 때 입력 확인 전에 빈 디렉터리를 만들던 동작을 수정했습니다. 일반·chunk 경로 모두 부작용 없이 중단하며, `--text`를 함께 준 새 실행에서만 지정 디렉터리를 생성합니다.
+- upstream #88의 rulebook 경로 계약을 Hermes dispatch에 반영했습니다. diagnostician의 `taxonomy_path`와 모든 monolith의 `quick_rules_path`를 설치된 skill의 절대 경로로 전달해 사용자 cwd에서 상대 경로로 잘못 해석되지 않도록 했습니다.
 
 ## 2.3.0-hermes.1 (2026-08-02)
 

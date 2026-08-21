@@ -224,16 +224,16 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 
 **Light**
 
-1. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, and `strength=보수`.
+1. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, `strength=보수`, and `quick_rules_path=<absolute-SKILL_ROOT>/references/quick-rules.md`.
 2. Verify `final.md`, its single `HUMANIZE-SUMMARY` block, and preservation invariants, then run the structural gate. Exit 2 permits one conservative rollback/retry; a repeated exit 2 stops without adoption.
 3. **Light escalation without a diagnosis:** run the finalizer only when the structural gate exits 1, two or more monolith self-checks fail, or the user explicitly requests verification evidence. Copy `final.md` to `final_pre_finalize.md`, then call `references/runtime-agents/finalizer.md` without `diagnosis_path`. Do not add a diagnostician call: the finalizer's fidelity review compares the original and rewrite directly. Read back `final.md` and `09_finalize.json`, validate them with `scripts/validate_stage_artifacts.py --stage finalize` (not `--stage all`, which requires a diagnosis), then rerun the structural gate with `--stamp-summary` before adoption.
 4. If little needs changing and the measured rate is below 5%, report that rather than manufacturing edits.
 
 **Standard**
 
-1. Dispatch one leaf child using `references/runtime-agents/diagnostician.md` with `taxonomy_path=references/diagnosis-rules.md` to write `02_diagnosis.md`.
+1. Dispatch one leaf child using `references/runtime-agents/diagnostician.md` with `taxonomy_path=<absolute-SKILL_ROOT>/references/diagnosis-rules.md` to write `02_diagnosis.md`.
 2. Read back and validate the diagnosis, then rerun the shim with `--diagnosis`.
-3. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, targeting the diagnosed 3–6 patterns.
+3. Dispatch one leaf child using `references/runtime-agents/monolith.md`, `mode=document`, and `quick_rules_path=<absolute-SKILL_ROOT>/references/quick-rules.md`, targeting the diagnosed 3–6 patterns.
 4. Read back and validate `final.md`, then apply the deterministic structural gate.
 5. Run a finalizer only under the upstream escalation table: structural gate exit 1, two or more failed monolith self-checks, or an explicit request for verification evidence. Otherwise standard ends after the two required role calls. When escalation applies, copy the current `final.md` to `final_pre_finalize.md` before dispatch, then call `references/runtime-agents/finalizer.md` with the original, diagnosis, rewritten, backup, and `09_finalize.json` report paths. After completion, read back and validate both `final.md` and `09_finalize.json`, rerun the deterministic structural gate with `--stamp-summary`, and apply the resulting gate and finalizer verdict. `hold_and_report` is a human-review stop and must not be reported as an adopted final result.
 
@@ -241,7 +241,7 @@ For `heavy`/strict, initialize `00_execution.json` after route selection with `s
 
 1. Dispatch and validate the diagnostician stage exactly as in `standard`.
 2. Rerun the shim with `--diagnosis`. Add `--chunk` only when the document exceeds a reliable single-child context boundary or the user explicitly requests chunking. Treat the shim's small-input warning as a reason to keep one monolith call. Route selection and chunk selection are separate decisions.
-3. Without a chunk manifest, dispatch one monolith child with `mode=document`, `input_path=01_input_with_metrics.txt`, and `output_path=final.md`. With a deliberate chunk manifest, if `body_chunk_count` is one, use `mode=document` and the manifest-declared `input_file`; if it is two or more, create one `delegate_task(tasks=[...])` batch whose leaf tasks each use `mode=chunk` and distinct manifest-declared `input_file` and `rewritten_file` paths.
+3. Every monolith child receives `quick_rules_path=<absolute-SKILL_ROOT>/references/quick-rules.md`. Without a chunk manifest, dispatch one monolith child with `mode=document`, `input_path=01_input_with_metrics.txt`, and `output_path=final.md`. With a deliberate chunk manifest, if `body_chunk_count` is one, use `mode=document` and the manifest-declared `input_file`; if it is two or more, create one `delegate_task(tasks=[...])` batch whose leaf tasks each use `mode=chunk` and distinct manifest-declared `input_file` and `rewritten_file` paths.
 4. Run at most four chunk children concurrently for upstream parity and respect any lower Hermes runtime cap. Split larger manifests into sequential batches. Children must never write the same file.
 5. After the consolidated batch completion, verify every rewritten chunk. Then run `scripts/reassemble_chunks.py --run-dir <run-dir> --strict --output final.md`. For a single-document path, validate `final.md` directly.
 6. Run `scripts/verify_gates.py`. Exit 1 triggers finalizer review. Exit 2 forbids adoption: restore the last safe version and rerun monolith conservatively once; a second exit 2 stops as `hold_and_report`. Exit 3 must be fixed and rerun, never skipped.
